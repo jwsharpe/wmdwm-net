@@ -11,6 +11,7 @@ img {
   margin-top: 1rem;
   max-height: 80px;
   max-width: 80px;
+  cursor: pointer;
 }
 audio {
   margin-top: 1em;
