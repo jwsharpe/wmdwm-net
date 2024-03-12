@@ -15,6 +15,38 @@ body {
   -webkit-animation: spin 1.1s infinite linear;
   margin: 8px;
 }
+.hi-im-goku {
+  max-height: 240px;
+  display: flex;
+  justify-content: center;
+  opacity: 0.5;
+}
+.goku {
+  animation: wiggle 1.1s ease infinite;
+  margin: 8px;
+}
+@keyframes wiggle {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(5deg);
+  }
+  50% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+h1.wiggle {
+  display: inline-block;
+  animation: wiggle 2.5s infinite;
+}
 .monster-container {
   max-height: 160px;
   max-width: 160px;
