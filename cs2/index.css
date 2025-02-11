@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffeb3b;
+  font-family: "Nunito", serif;
+  overflow: hidden;
+}
+
+p {
+  color: #834bff;
+}
+
+a {
+  color: #651fff;
+  font-weight: bold;
+}
+div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#background-container {
+  opacity: 0.125;
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
