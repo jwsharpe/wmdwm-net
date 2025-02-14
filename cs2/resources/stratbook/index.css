@@ -1,0 +1,47 @@
+body {
+  margin: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  height: 90vh;
+  background: #fff59d;
+  font-family: "Nunito", serif;
+}
+
+h2 {
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  width: auto;
+  flex-direction: column;
+}
+
+section {
+  font-weight: bold;
+}
+
+content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: #7c4dff;
+}
+
+div {
+  display: flex;
+  flex-direction: column;
+}
