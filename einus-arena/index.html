@@ -88,12 +88,30 @@
         font-size: 32px;
         margin: 10px;
       }
+      #credits {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        color: white;
+        font-size: 18px;
+        font-style: italic;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        z-index: 100;
+        opacity: 0;
+        transform: translateX(-100px);
+        transition: opacity 2s ease-in, transform 2s ease-in;
+        line-height: 1.6;
+      }
+      #credits.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
     </style>
   </head>
   <body>
     <!-- Main Menu -->
     <div id="mainMenu" class="menu">
-      <h1>EINAR ARENA II</h1>
+      <h1>EINAR ARENA II.0</h1>
       <button onclick="startGame()">START</button>
     </div>
 
@@ -122,6 +140,14 @@
       W/S or Up/Down to move forward/back | A/D or Left/Right to rotate | Space
       to jump | ESC to pause
     </div>
+    
+    <!-- Credits (hidden by default, shown after secret code) -->
+    <div id="credits" class="hidden">
+      Written by: Video 'James' Kojima<br>
+      Directed by: Video 'James' Kojima<br>
+      Featuring: The Skull Unit
+    </div>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
       // Game state
@@ -131,6 +157,11 @@
       let timerInterval = null;
       let highScoreValue =
         parseInt(localStorage.getItem("einarArena2HighScore")) || 0;
+
+      // Secret code tracking
+      let secretCodeBuffer = "";
+      const secretCode = "JAMES";
+      let creditsShown = false;
 
       // Game setup
       const scene = new THREE.Scene();
@@ -205,10 +236,15 @@
       }
 
       // Background music
+      const musicRoll = Math.floor(Math.random() * 100) + 1; // Random number 1-100
       const music = new Audio();
-      music.src = "./einus-arena/circus.ogg";
-      music.loop = true;
-      music.volume = 0.25;
+      
+      if (musicRoll == 5) {
+        music.src = "./einus-arena/manaha.ogg"; // Alternative music for lucky roll
+        console.log("...");
+      } else {
+        music.src = "./einus-arena/circus.ogg"; // Normal music
+      }
 
       // Start music on first user interaction
       let musicStarted = false;
@@ -283,6 +319,21 @@
         if (e.key === "Escape") {
           pauseGame();
         }
+        
+        // Secret code detection
+        if (!creditsShown && e.key.length === 1) {
+          secretCodeBuffer += e.key.toUpperCase();
+          
+          // Keep only the last 5 characters
+          if (secretCodeBuffer.length > secretCode.length) {
+            secretCodeBuffer = secretCodeBuffer.slice(-secretCode.length);
+          }
+          
+          // Check if the code matches
+          if (secretCodeBuffer === secretCode) {
+            showCredits();
+          }
+        }
       });
 
       window.addEventListener("keyup", (e) => {
@@ -295,6 +346,30 @@
           pauseGame();
         }
       });
+
+      // Show credits function
+      function showCredits() {
+        creditsShown = true;
+        const creditsElement = document.getElementById("credits");
+        creditsElement.classList.remove("hidden");
+        
+        // Trigger animation after a brief delay
+        setTimeout(() => {
+          creditsElement.classList.add("show");
+        }, 50);
+        
+        // Switch to alternative music
+        const currentTime = music.currentTime;
+        const wasPlaying = !music.paused;
+        
+        music.pause();
+        music.src = "./einus-arena/manaha.ogg";
+        music.currentTime = 0; // Start from beginning
+        
+        if (wasPlaying) {
+          music.play().catch((e) => console.log("Music switch prevented"));
+        }
+      }
 
       // Score
       let score = 0;
