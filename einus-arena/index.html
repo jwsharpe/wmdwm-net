@@ -465,7 +465,7 @@
             }
         }
 
-           // Animation loop with frame rate limiting
+        // Animation loop with frame rate limiting
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
         let lastFrameTime = 0;
@@ -555,7 +555,7 @@
         // Initialize high score display
         document.getElementById('highScore').textContent = highScoreValue;
 
-        animate();
+        animate(performance.now());
     </script>
 </body>
 </html>
