@@ -465,9 +465,24 @@
             }
         }
 
-        // Animation loop
-        function animate() {
+           // Animation loop with frame rate limiting
+        const targetFPS = 60;
+        const frameDelay = 1000 / targetFPS;
+        let lastFrameTime = 0;
+
+        function animate(currentTime) {
             requestAnimationFrame(animate);
+
+            // Calculate time since last frame
+            const deltaTime = currentTime - lastFrameTime;
+
+            // Skip frame if we haven't reached the target frame delay
+            if (deltaTime < frameDelay) {
+                return;
+            }
+
+            // Update lastFrameTime, accounting for any drift
+            lastFrameTime = currentTime - (deltaTime % frameDelay);
 
             if (gameState === 'playing') {
                 // Player movement - Tank controls
