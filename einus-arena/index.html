@@ -106,12 +106,27 @@
         opacity: 1;
         transform: translateX(0);
       }
+      #weaponsImage {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 200px;
+        height: auto;
+        z-index: 100;
+        opacity: 0;
+        transform: translateX(100px);
+        transition: opacity 2s ease-in, transform 2s ease-in;
+      }
+      #weaponsImage.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
     </style>
   </head>
   <body>
     <!-- Main Menu -->
     <div id="mainMenu" class="menu">
-      <h1>EINAR ARENA II.0</h1>
+      <h1>EINAR ARENA II</h1>
       <button onclick="startGame()">START</button>
     </div>
 
@@ -140,14 +155,16 @@
       W/S or Up/Down to move forward/back | A/D or Left/Right to rotate | Space
       to jump | ESC to pause
     </div>
-    
-    <!-- Credits (hidden by default, shown after secret code) -->
+
     <div id="credits" class="hidden">
-      Written by: Video 'James' Kojima<br>
-      Directed by: Video 'James' Kojima<br>
+      Written by: Video 'James' Kojima<br />
+      Directed by: Video 'James' Kojima<br />
       Featuring: The Skull Unit
     </div>
-    
+
+    <!-- Weapons image (hidden by default, shown with credits) -->
+    <img id="weaponsImage" class="hidden" src="./einus-arena/weapons.png" />
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
       // Game state
@@ -235,16 +252,19 @@
         clouds.push(cloud);
       }
 
-      // Background music
+      // Background music with random selection
       const musicRoll = Math.floor(Math.random() * 100) + 1; // Random number 1-100
       const music = new Audio();
-      
-      if (musicRoll == 5) {
-        music.src = "./einus-arena/manaha.ogg"; // Alternative music for lucky roll
-        console.log("...");
+
+      if (musicRoll === 5) {
+        music.src = "./einus-arena/manaha.ogg";
+        console.log("Lucky music roll! Playing alternative track.");
       } else {
         music.src = "./einus-arena/circus.ogg"; // Normal music
       }
+
+      music.loop = true;
+      music.volume = 0.25;
 
       // Start music on first user interaction
       let musicStarted = false;
@@ -319,16 +339,16 @@
         if (e.key === "Escape") {
           pauseGame();
         }
-        
+
         // Secret code detection
         if (!creditsShown && e.key.length === 1) {
           secretCodeBuffer += e.key.toUpperCase();
-          
+
           // Keep only the last 5 characters
           if (secretCodeBuffer.length > secretCode.length) {
             secretCodeBuffer = secretCodeBuffer.slice(-secretCode.length);
           }
-          
+
           // Check if the code matches
           if (secretCodeBuffer === secretCode) {
             showCredits();
@@ -351,21 +371,25 @@
       function showCredits() {
         creditsShown = true;
         const creditsElement = document.getElementById("credits");
+        const weaponsElement = document.getElementById("weaponsImage");
+
         creditsElement.classList.remove("hidden");
-        
+        weaponsElement.classList.remove("hidden");
+
         // Trigger animation after a brief delay
         setTimeout(() => {
           creditsElement.classList.add("show");
+          weaponsElement.classList.add("show");
         }, 50);
-        
+
         // Switch to alternative music
         const currentTime = music.currentTime;
         const wasPlaying = !music.paused;
-        
+
         music.pause();
         music.src = "./einus-arena/manaha.ogg";
         music.currentTime = 0; // Start from beginning
-        
+
         if (wasPlaying) {
           music.play().catch((e) => console.log("Music switch prevented"));
         }
