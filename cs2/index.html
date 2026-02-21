@@ -16,9 +16,11 @@
     <main>
       <h1>Hey! It's me, Goku!<h1>
       <h1>Ready to play some Counterstrike?</h1>
-      <content>
-        <a class="button" href="steam://connect/cs2.wmdwm.net">Connect to Server</a>
-      </content>
+  <a class="button" href="steam://connect/cs2.wmdwm.net">Connect to Server</a>
+  <button class="button" onclick="navigator.clipboard.writeText('connect cs2.wmdwm.net:27015').then(() => {
+    this.textContent = 'Copied!';
+    setTimeout(() => this.textContent = 'Copy Connect Code', 2000);
+  })">Copy Connect Code</button>
     </main>
     <footer>
       <div>
