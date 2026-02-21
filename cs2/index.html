@@ -24,7 +24,13 @@
         onclick="
           navigator.clipboard
             .writeText('connect cs2.wmdwm.net:27015')
-            .then(() => {})
+            .then(() => {
+              this.textContent = 'Copied!';
+              setTimeout(
+                () => (this.textContent = 'Or Copy Connect Code'),
+                2000,
+              );
+            })
         "
       >
         Or Copy Connect Code
