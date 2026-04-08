@@ -344,11 +344,7 @@
     <div id="lobby">
       <div class="lobby-box">
         <div class="game-title">CHESS WORLD</div>
-        <div class="game-subtitle">
-          one infinite board &middot; everyone's on it
-        </div>
 
-        <label>Your Name</label>
         <input
           type="text"
           id="nameInput"
@@ -648,6 +644,7 @@
         peer.on("error", (err) => {
           document.getElementById("errMsg").textContent =
             "Error: " + err.message;
+          p;
         });
       }
 
