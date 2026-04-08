@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess World</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap");
+
+      :root {
+        --bg: #0a0a0f;
+        --panel: #12121a;
+        --border: #2a2a3a;
+        --gold: #c9a84c;
+        --gold-dim: #7a6230;
+        --text: #e8e0cc;
+        --muted: #6a6480;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Crimson Pro", Georgia, serif;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      #lobby {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at center, #1a1428 0%, #0a0a0f 70%);
+        z-index: 100;
+      }
+
+      .lobby-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-top: 2px solid var(--gold);
+        padding: 48px 56px;
+        width: 460px;
+        position: relative;
+        box-shadow:
+          0 0 80px rgba(201, 168, 76, 0.08),
+          0 40px 80px rgba(0, 0, 0, 0.6);
+      }
+
+      .lobby-box::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--gold),
+          transparent
+        );
+      }
+
+      .game-title {
+        font-family: "Cinzel", serif;
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        text-align: center;
+        color: var(--gold);
+        margin-bottom: 6px;
+        text-shadow: 0 0 30px rgba(201, 168, 76, 0.3);
+      }
+
+      .game-subtitle {
+        font-family: "Crimson Pro", serif;
+        font-style: italic;
+        text-align: center;
+        color: var(--muted);
+        font-size: 15px;
+        margin-bottom: 40px;
+        letter-spacing: 1px;
+      }
+
+      label {
+        display: block;
+        font-family: "Cinzel", serif;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: var(--gold-dim);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 12px 16px;
+        font-family: "Crimson Pro", serif;
+        font-size: 17px;
+        outline: none;
+        margin-bottom: 28px;
+        transition: border-color 0.2s;
+      }
+
+      input[type="text"]:focus {
+        border-color: var(--gold-dim);
+      }
+      input[type="text"]::placeholder {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .piece-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+        margin-bottom: 32px;
+      }
+
+      .piece-btn {
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 10px 4px;
+        font-size: 22px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .piece-btn span.plabel {
+        font-family: "Cinzel", serif;
+        font-size: 7px;
+        letter-spacing: 1px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      .piece-btn:hover {
+        border-color: var(--gold-dim);
+        color: var(--text);
+      }
+      .piece-btn.selected {
+        border-color: var(--gold);
+        background: rgba(201, 168, 76, 0.08);
+        color: var(--gold);
+      }
+      .piece-btn.selected .plabel {
+        color: var(--gold);
+      }
+
+      .enter-btn {
+        width: 100%;
+        background: transparent;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        padding: 14px;
+        font-family: "Cinzel", serif;
+        font-size: 13px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.25s;
+      }
+
+      .enter-btn:hover {
+        background: var(--gold);
+        color: #0a0a0f;
+      }
+
+      .error-msg {
+        color: #e05252;
+        font-size: 13px;
+        font-style: italic;
+        text-align: center;
+        margin-top: -20px;
+        margin-bottom: 20px;
+        min-height: 18px;
+      }
+
+      #hud {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 16px 20px;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .hud-panel {
+        background: rgba(10, 10, 15, 0.88);
+        border: 1px solid var(--border);
+        padding: 10px 16px;
+        backdrop-filter: blur(8px);
+        pointer-events: all;
+      }
+
+      .coords {
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+        letter-spacing: 2px;
+        color: var(--gold);
+        text-align: right;
+      }
+
+      .clabel {
+        color: var(--muted);
+        font-size: 9px;
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .player-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .player-piece-display {
+        font-size: 22px;
+      }
+
+      .player-name-display {
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+        letter-spacing: 2px;
+        color: var(--gold);
+      }
+
+      .online-count {
+        font-family: "Crimson Pro", serif;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      #chatbar {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        gap: 8px;
+        z-index: 10;
+        width: 420px;
+        max-width: 90vw;
+      }
+
+      #chatinput {
+        flex: 1;
+        background: rgba(10, 10, 15, 0.92);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 10px 14px;
+        font-family: "Crimson Pro", serif;
+        font-size: 15px;
+        outline: none;
+        backdrop-filter: blur(8px);
+      }
+
+      #chatinput:focus {
+        border-color: var(--gold-dim);
+      }
+      #chatinput::placeholder {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      #sendbtn {
+        background: var(--gold);
+        border: none;
+        color: #0a0a0f;
+        padding: 10px 18px;
+        font-family: "Cinzel", serif;
+        font-size: 11px;
+        letter-spacing: 2px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      #sendbtn:hover {
+        opacity: 0.8;
+      }
+
+      #controls-hint {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(10, 10, 15, 0.8);
+        border: 1px solid var(--border);
+        padding: 12px 16px;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.9;
+        backdrop-filter: blur(8px);
+        z-index: 10;
+        display: none;
+      }
+
+      #controls-hint .key {
+        display: inline-block;
+        background: var(--border);
+        color: var(--text);
+        padding: 1px 6px;
+        font-family: "Cinzel", serif;
+        font-size: 10px;
+        margin-right: 4px;
+        border-radius: 2px;
+      }
+
+      #bump-flash {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 50;
+        box-shadow: inset 0 0 0 3px #e05252;
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lobby">
+      <div class="lobby-box">
+        <div class="game-title">CHESS WORLD</div>
+        <div class="game-subtitle">
+          one infinite board &middot; everyone's on it
+        </div>
+
+        <label>Your Name</label>
+        <input
+          type="text"
+          id="nameInput"
+          placeholder="Enter your name…"
+          maxlength="20"
+        />
+
+        <label>Choose Your Piece</label>
+        <div class="piece-grid" id="pieceGrid"></div>
+
+        <div class="error-msg" id="errMsg"></div>
+        <button class="enter-btn" id="enterBtn">ENTER THE BOARD</button>
+      </div>
+    </div>
+
+    <div id="hud" style="display: none">
+      <div class="hud-panel player-info">
+        <div class="player-piece-display" id="hudPiece"></div>
+        <div>
+          <div class="player-name-display" id="hudName"></div>
+          <div class="online-count" id="hudOnline">1 player online</div>
+        </div>
+      </div>
+      <div class="hud-panel">
+        <span class="clabel">COORDINATES</span>
+        <div class="coords" id="coords">0 , 0</div>
+      </div>
+    </div>
+
+    <div id="chatbar">
+      <input
+        type="text"
+        id="chatinput"
+        placeholder="Press T to chat… (Enter to send)"
+        maxlength="80"
+      />
+      <button id="sendbtn">SEND</button>
+    </div>
+
+    <div id="controls-hint">
+      <div>
+        <span class="key">WASD</span> / <span class="key">↑↓←→</span> Move
+      </div>
+      <div><span class="key">T</span> Chat</div>
+      <div><span class="key">Scroll</span> Zoom</div>
+      <div><span class="key">Click</span> Move to tile</div>
+    </div>
+
+    <div id="bump-flash"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+      // ═══════════════════════════════
+      //  CONSTANTS
+      // ═══════════════════════════════
+      const TILE = 64;
+      const HOST_PEER_ID = "chessworld-global-host-v1";
+
+      const PIECES = [
+        { id: "K", label: "King", sym: "♚" },
+        { id: "Q", label: "Queen", sym: "♛" },
+        { id: "R", label: "Rook", sym: "♜" },
+        { id: "B", label: "Bishop", sym: "♝" },
+        { id: "N", label: "Knight", sym: "♞" },
+        { id: "P", label: "Pawn", sym: "♟" },
+      ];
+
+      const COLORS = [
+        "#c9a84c",
+        "#7ab8d4",
+        "#7ad49a",
+        "#d47a7a",
+        "#b07ad4",
+        "#d4b07a",
+        "#7ad4c9",
+        "#d4907a",
+        "#a0d47a",
+        "#d47ab0",
+      ];
+
+      // ═══════════════════════════════
+      //  MOVE LOGIC
+      // ═══════════════════════════════
+      // Returns valid destination squares given occupied positions (others only).
+      function getValidMoves(piece, x, y, occupied) {
+        const result = [];
+
+        const slide = (dirs) => {
+          for (const [dx, dy] of dirs) {
+            for (let i = 1; i <= 40; i++) {
+              const nx = x + dx * i,
+                ny = y + dy * i;
+              if (occupied.has(`${nx},${ny}`)) break; // blocked — don't include, stop ray
+              result.push([nx, ny]);
+            }
+          }
+        };
+
+        switch (piece) {
+          case "K":
+            for (let dx = -1; dx <= 1; dx++)
+              for (let dy = -1; dy <= 1; dy++)
+                if ((dx || dy) && !occupied.has(`${x + dx},${y + dy}`))
+                  result.push([x + dx, y + dy]);
+            break;
+          case "Q":
+            slide([
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+              [1, 1],
+              [-1, -1],
+              [1, -1],
+              [-1, 1],
+            ]);
+            break;
+          case "R":
+            slide([
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+            ]);
+            break;
+          case "B":
+            slide([
+              [1, 1],
+              [-1, -1],
+              [1, -1],
+              [-1, 1],
+            ]);
+            break;
+          case "N":
+            [
+              [2, 1],
+              [2, -1],
+              [-2, 1],
+              [-2, -1],
+              [1, 2],
+              [1, -2],
+              [-1, 2],
+              [-1, -2],
+            ].forEach(([dx, dy]) => {
+              if (!occupied.has(`${x + dx},${y + dy}`))
+                result.push([x + dx, y + dy]);
+            });
+            break;
+          case "P":
+            // Cardinal one-step (friendly game pawns move all directions)
+            [
+              [0, -1],
+              [0, 1],
+              [-1, 0],
+              [1, 0],
+            ].forEach(([dx, dy]) => {
+              if (!occupied.has(`${x + dx},${y + dy}`))
+                result.push([x + dx, y + dy]);
+            });
+            break;
+        }
+        return result;
+      }
+
+      // Pick nearest valid move in a given direction (dx/dy each -1,0,1)
+      function nearestInDir(piece, x, y, dx, dy, validMoves) {
+        const matches = validMoves.filter(([vx, vy]) => {
+          const rx = vx - x,
+            ry = vy - y;
+          if (dx !== 0 && dy !== 0)
+            // diagonal
+            return (
+              Math.sign(rx) === dx &&
+              Math.sign(ry) === dy &&
+              Math.abs(rx) === Math.abs(ry)
+            );
+          if (dx !== 0) return Math.sign(rx) === dx && ry === 0;
+          if (dy !== 0) return Math.sign(ry) === dy && rx === 0;
+          return false;
+        });
+        if (!matches.length) return null;
+        matches.sort(
+          (a, b) =>
+            Math.abs(a[0] - x) +
+            Math.abs(a[1] - y) -
+            (Math.abs(b[0] - x) + Math.abs(b[1] - y)),
+        );
+        return matches[0];
+      }
+
+      // ═══════════════════════════════
+      //  GAME STATE
+      // ═══════════════════════════════
+      let myId = null;
+      let players = {}; // id -> {id,name,piece,x,y,color}
+      let chatMessages = []; // {id,name,text,ts}
+      let chatActive = false;
+      let isHost = false;
+      let peer = null;
+      let hostConn = null;
+      let guestConns = [];
+      let cameraX = 0,
+        cameraY = 0,
+        zoom = 1;
+      const MOVE_CD = 130; // ms between moves
+      let lastMove = 0;
+
+      function occupiedBy(excludeId) {
+        return new Set(
+          Object.values(players)
+            .filter((p) => p.id !== excludeId)
+            .map((p) => `${p.x},${p.y}`),
+        );
+      }
+
+      // ═══════════════════════════════
+      //  LOBBY
+      // ═══════════════════════════════
+      let selectedPiece = "K";
+      const pieceGrid = document.getElementById("pieceGrid");
+
+      PIECES.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.className = "piece-btn" + (p.id === "K" ? " selected" : "");
+        btn.innerHTML = `${p.sym}<span class="plabel">${p.label}</span>`;
+        btn.onclick = () => {
+          document
+            .querySelectorAll(".piece-btn")
+            .forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedPiece = p.id;
+        };
+        pieceGrid.appendChild(btn);
+      });
+
+      document.getElementById("enterBtn").onclick = () => {
+        const name = document.getElementById("nameInput").value.trim();
+        if (!name) {
+          document.getElementById("errMsg").textContent = "Enter a name first.";
+          return;
+        }
+        document.getElementById("errMsg").textContent = "Connecting…";
+        window._myMeta = {
+          name,
+          piece: selectedPiece,
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          x: Math.round((Math.random() - 0.5) * 16),
+          y: Math.round((Math.random() - 0.5) * 16),
+        };
+        loadPeerJS();
+      };
+
+      // ═══════════════════════════════
+      //  NETWORK
+      // ═══════════════════════════════
+      function loadPeerJS() {
+        const s = document.createElement("script");
+        s.src = "https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js";
+        s.onload = tryBecomeHost;
+        document.head.appendChild(s);
+      }
+
+      function tryBecomeHost() {
+        const p = new Peer(HOST_PEER_ID, { debug: 0 });
+        p.on("open", (id) => {
+          peer = p;
+          myId = id;
+          isHost = true;
+          players[myId] = { id: myId, ...window._myMeta };
+          peer.on("connection", onGuestConnect);
+          launchGame();
+        });
+        p.on("error", (err) => {
+          p.destroy();
+          if (err.type === "unavailable-id") joinAsGuest();
+          else
+            document.getElementById("errMsg").textContent =
+              "Error: " + err.message;
+        });
+      }
+
+      function joinAsGuest() {
+        const gid = "cw-" + Math.random().toString(36).slice(2, 10);
+        peer = new Peer(gid, { debug: 0 });
+        peer.on("open", (id) => {
+          myId = id;
+          players[myId] = { id: myId, ...window._myMeta };
+          const conn = peer.connect(HOST_PEER_ID, { reliable: true });
+          hostConn = conn;
+          conn.on("open", () =>
+            conn.send({ type: "join", player: players[myId] }),
+          );
+          conn.on("data", onHostMsg);
+          conn.on("close", () => setTimeout(() => location.reload(), 1500));
+          launchGame();
+        });
+        peer.on("error", (err) => {
+          document.getElementById("errMsg").textContent =
+            "Error: " + err.message;
+        });
+      }
+
+      function onGuestConnect(conn) {
+        guestConns.push(conn);
+        conn.on("data", (data) => onGuestMsg(conn, data));
+        conn.on("close", () => {
+          guestConns = guestConns.filter((c) => c !== conn);
+          delete players[conn.peer];
+          broadcast({ type: "leave", id: conn.peer });
+        });
+      }
+
+      function onGuestMsg(conn, data) {
+        if (data.type === "join") {
+          const pl = data.player;
+          // Nudge spawn if occupied
+          const occ = new Set(
+            Object.values(players).map((p) => `${p.x},${p.y}`),
+          );
+          while (occ.has(`${pl.x},${pl.y}`)) pl.x++;
+          players[pl.id] = pl;
+          conn.send({ type: "state", players, chatMessages });
+          broadcast({ type: "join", player: pl }, conn);
+        }
+        if (data.type === "move") {
+          const pl = players[data.id];
+          if (!pl) return;
+          const occ = occupiedBy(data.id);
+          const vm = getValidMoves(pl.piece, pl.x, pl.y, occ);
+          if (vm.some(([vx, vy]) => vx === data.x && vy === data.y)) {
+            pl.x = data.x;
+            pl.y = data.y;
+            broadcast(
+              { type: "move", id: data.id, x: data.x, y: data.y },
+              conn,
+            );
+            conn.send({ type: "moveOk", x: data.x, y: data.y });
+          } else {
+            conn.send({ type: "moveDenied", x: pl.x, y: pl.y });
+          }
+        }
+        if (data.type === "chat") {
+          const msg = {
+            id: data.id,
+            name: data.name,
+            text: data.text,
+            ts: Date.now(),
+          };
+          pushChat(msg);
+          broadcast({ type: "chat", ...msg }, conn);
+          conn.send({ type: "chat", ...msg });
+        }
+      }
+
+      function onHostMsg(data) {
+        if (data.type === "state") {
+          players = data.players;
+          chatMessages = data.chatMessages || [];
+        }
+        if (data.type === "join") {
+          players[data.player.id] = data.player;
+        }
+        if (data.type === "leave") {
+          delete players[data.id];
+        }
+        if (data.type === "move") {
+          if (players[data.id]) {
+            players[data.id].x = data.x;
+            players[data.id].y = data.y;
+          }
+        }
+        if (data.type === "moveOk") {
+          if (players[myId]) {
+            players[myId].x = data.x;
+            players[myId].y = data.y;
+          }
+        }
+        if (data.type === "moveDenied") {
+          if (players[myId]) {
+            players[myId].x = data.x;
+            players[myId].y = data.y;
+          }
+          bump();
+        }
+        if (data.type === "chat") {
+          pushChat(data);
+        }
+      }
+
+      function broadcast(msg, except) {
+        guestConns.forEach((c) => {
+          if (c !== except)
+            try {
+              c.send(msg);
+            } catch (e) {}
+        });
+      }
+
+      function pushChat(msg) {
+        chatMessages.push(msg);
+        if (chatMessages.length > 300) chatMessages.splice(0, 100);
+      }
+
+      // ═══════════════════════════════
+      //  MOVE REQUEST
+      // ═══════════════════════════════
+      function requestMove(tx, ty) {
+        const now = performance.now();
+        if (now - lastMove < MOVE_CD) return false;
+        const me = players[myId];
+        if (!me) return false;
+        const occ = occupiedBy(myId);
+        const vm = getValidMoves(me.piece, me.x, me.y, occ);
+        if (!vm.some(([vx, vy]) => vx === tx && vy === ty)) {
+          bump();
+          return false;
+        }
+        lastMove = now;
+        // Optimistic
+        me.x = tx;
+        me.y = ty;
+        const msg = { type: "move", id: myId, x: tx, y: ty };
+        if (isHost) {
+          broadcast(msg);
+        } else {
+          hostConn && hostConn.send(msg);
+        }
+        return true;
+      }
+
+      function tryDir(dx, dy) {
+        const me = players[myId];
+        if (!me) return;
+        const occ = occupiedBy(myId);
+        const vm = getValidMoves(me.piece, me.x, me.y, occ);
+        const dest = nearestInDir(me.piece, me.x, me.y, dx, dy, vm);
+        if (dest) requestMove(dest[0], dest[1]);
+        else bump();
+      }
+
+      // ═══════════════════════════════
+      //  BUMP FLASH
+      // ═══════════════════════════════
+      function bump() {
+        const el = document.getElementById("bump-flash");
+        el.style.opacity = "1";
+        clearTimeout(el._t);
+        el._t = setTimeout(() => (el.style.opacity = "0"), 150);
+      }
+
+      // ═══════════════════════════════
+      //  LAUNCH
+      // ═══════════════════════════════
+      function launchGame() {
+        document.getElementById("lobby").style.display = "none";
+        document.getElementById("hud").style.display = "flex";
+        document.getElementById("chatbar").style.display = "flex";
+        document.getElementById("controls-hint").style.display = "block";
+
+        const m = window._myMeta;
+        document.getElementById("hudPiece").textContent = PIECES.find(
+          (p) => p.id === m.piece,
+        ).sym;
+        document.getElementById("hudName").textContent = m.name;
+
+        cameraX = m.x * TILE;
+        cameraY = m.y * TILE;
+
+        setupCanvas();
+        setupInput();
+        requestAnimationFrame(loop);
+      }
+
+      // ═══════════════════════════════
+      //  CANVAS
+      // ═══════════════════════════════
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      function setupCanvas() {
+        const resize = () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener("resize", resize);
+        canvas.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            zoom *= e.deltaY > 0 ? 0.88 : 1.12;
+            zoom = Math.max(0.3, Math.min(3, zoom));
+          },
+          { passive: false },
+        );
+      }
+
+      // ═══════════════════════════════
+      //  INPUT
+      // ═══════════════════════════════
+      const DIR_MAP = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        a: [-1, 0],
+        A: [-1, 0],
+        d: [1, 0],
+        D: [1, 0],
+        w: [0, -1],
+        W: [0, -1],
+        s: [0, 1],
+        S: [0, 1],
+      };
+
+      // Held-key repeat
+      const heldKeys = {};
+      let repeatTimer = null;
+      const REPEAT_DELAY = 180,
+        REPEAT_INTERVAL = 130;
+
+      function setupInput() {
+        window.addEventListener("keydown", (e) => {
+          if (chatActive) return;
+          if (e.key === "t" || e.key === "T") {
+            e.preventDefault();
+            openChat();
+            return;
+          }
+          if (DIR_MAP[e.key]) {
+            e.preventDefault();
+            if (!heldKeys[e.key]) {
+              heldKeys[e.key] = true;
+              const [dx, dy] = DIR_MAP[e.key];
+              tryDir(dx, dy);
+              // Start repeat after delay
+              clearTimeout(repeatTimer);
+              repeatTimer = setTimeout(function rep() {
+                if (heldKeys[e.key]) {
+                  tryDir(dx, dy);
+                  repeatTimer = setTimeout(rep, REPEAT_INTERVAL);
+                }
+              }, REPEAT_DELAY);
+            }
+          }
+        });
+
+        window.addEventListener("keyup", (e) => {
+          if (DIR_MAP[e.key]) {
+            heldKeys[e.key] = false;
+            clearTimeout(repeatTimer);
+          }
+        });
+
+        // Click to move
+        canvas.addEventListener("click", (e) => {
+          if (chatActive) return;
+          const me = players[myId];
+          if (!me) return;
+          const tileS = TILE * zoom;
+          const offX = canvas.width / 2 - cameraX * zoom;
+          const offY = canvas.height / 2 - cameraY * zoom;
+          const tx = Math.floor((e.clientX - offX) / tileS);
+          const ty = Math.floor((e.clientY - offY) / tileS);
+          const occ = occupiedBy(myId);
+          const vm = getValidMoves(me.piece, me.x, me.y, occ);
+          if (vm.some(([vx, vy]) => vx === tx && vy === ty))
+            requestMove(tx, ty);
+        });
+
+        document.getElementById("sendbtn").onclick = sendChat;
+        document
+          .getElementById("chatinput")
+          .addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendChat();
+            if (e.key === "Escape") closeChat();
+            e.stopPropagation();
+          });
+      }
+
+      function openChat() {
+        chatActive = true;
+        document.getElementById("chatinput").focus();
+      }
+      function closeChat() {
+        chatActive = false;
+        document.getElementById("chatinput").value = "";
+        document.getElementById("chatinput").blur();
+      }
+
+      function sendChat() {
+        const inp = document.getElementById("chatinput");
+        const text = inp.value.trim();
+        if (text) {
+          const me = players[myId];
+          const msg = { id: myId, name: me?.name || "?", text, ts: Date.now() };
+          if (isHost) {
+            pushChat(msg);
+            broadcast({ type: "chat", ...msg });
+          } else {
+            hostConn && hostConn.send({ type: "chat", ...msg });
+            pushChat(msg);
+          }
+        }
+        closeChat();
+      }
+
+      // ═══════════════════════════════
+      //  LOOP
+      // ═══════════════════════════════
+      function loop() {
+        const me = players[myId];
+        if (me) {
+          cameraX += (me.x * TILE - cameraX) * 0.1;
+          cameraY += (me.y * TILE - cameraY) * 0.1;
+          document.getElementById("coords").textContent = `${me.x} , ${me.y}`;
+          const n = Object.keys(players).length;
+          document.getElementById("hudOnline").textContent =
+            `${n} player${n !== 1 ? "s" : ""} online`;
+        }
+
+        const now = Date.now();
+        chatMessages = chatMessages.filter((m) => now - m.ts < 7000);
+
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      // ═══════════════════════════════
+      //  DRAW
+      // ═══════════════════════════════
+      function draw() {
+        const W = canvas.width,
+          H = canvas.height;
+        const tileS = TILE * zoom;
+        const offX = W / 2 - cameraX * zoom;
+        const offY = H / 2 - cameraY * zoom;
+
+        ctx.fillStyle = "#0a0a0f";
+        ctx.fillRect(0, 0, W, H);
+
+        const x0 = Math.floor(-offX / tileS) - 1;
+        const y0 = Math.floor(-offY / tileS) - 1;
+        const x1 = Math.ceil((W - offX) / tileS) + 1;
+        const y1 = Math.ceil((H - offY) / tileS) + 1;
+
+        // Checkerboard
+        for (let ty = y0; ty <= y1; ty++) {
+          for (let tx = x0; tx <= x1; tx++) {
+            ctx.fillStyle = (tx + ty) % 2 === 0 ? "#1c1c2a" : "#111118";
+            ctx.fillRect(tx * tileS + offX, ty * tileS + offY, tileS, tileS);
+          }
+        }
+
+        // Grid
+        ctx.strokeStyle = "rgba(255,255,255,0.02)";
+        ctx.lineWidth = 1;
+        for (let ty = y0; ty <= y1; ty++)
+          for (let tx = x0; tx <= x1; tx++)
+            ctx.strokeRect(tx * tileS + offX, ty * tileS + offY, tileS, tileS);
+
+        // Valid move highlights
+        const me = players[myId];
+        if (me) {
+          const occ = occupiedBy(myId);
+          const vm = getValidMoves(me.piece, me.x, me.y, occ);
+          vm.forEach(([vx, vy]) => {
+            if (vx < x0 || vx > x1 || vy < y0 || vy > y1) return;
+            const sx = vx * tileS + offX,
+              sy = vy * tileS + offY;
+            ctx.fillStyle = "rgba(201,168,76,0.09)";
+            ctx.fillRect(sx, sy, tileS, tileS);
+            ctx.fillStyle = "rgba(201,168,76,0.3)";
+            ctx.beginPath();
+            ctx.arc(
+              sx + tileS / 2,
+              sy + tileS / 2,
+              tileS * 0.1,
+              0,
+              Math.PI * 2,
+            );
+            ctx.fill();
+          });
+        }
+
+        // Players
+        const now = Date.now();
+        Object.values(players).forEach((pl) => {
+          const sx = pl.x * tileS + offX,
+            sy = pl.y * tileS + offY;
+          if (sx + tileS < 0 || sx > W || sy + tileS < 0 || sy > H) return;
+          const cx = sx + tileS / 2,
+            cy = sy + tileS / 2;
+          const isMe = pl.id === myId;
+
+          // Glow
+          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, tileS * 0.65);
+          g.addColorStop(0, pl.color + "2a");
+          g.addColorStop(1, "transparent");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(cx, cy, tileS * 0.65, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Self highlight
+          if (isMe) {
+            ctx.fillStyle = "rgba(201,168,76,0.06)";
+            ctx.fillRect(sx, sy, tileS, tileS);
+            ctx.strokeStyle = "rgba(201,168,76,0.5)";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(sx + 1, sy + 1, tileS - 2, tileS - 2);
+          }
+
+          // Piece
+          const fs = Math.max(10, tileS * 0.52);
+          ctx.font = `${fs}px serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = isMe ? "#fff" : pl.color;
+          ctx.fillText(
+            PIECES.find((p) => p.id === pl.piece).sym,
+            cx,
+            cy + tileS * 0.02,
+          );
+
+          // Name
+          const nfs = Math.max(7, tileS * 0.14);
+          ctx.font = `${nfs}px Cinzel, serif`;
+          ctx.textBaseline = "bottom";
+          ctx.fillStyle = isMe ? "#c9a84c" : pl.color;
+          ctx.fillText(pl.name, cx, sy - tileS * 0.05);
+
+          // Chat bubble
+          const msgs = chatMessages.filter((m) => m.id === pl.id);
+          if (msgs.length) {
+            const msg = msgs[msgs.length - 1];
+            const age = (now - msg.ts) / 7000;
+            const alpha = age < 0.72 ? 1 : Math.max(0, 1 - (age - 0.72) / 0.28);
+            if (alpha > 0) {
+              const cf = Math.max(9, tileS * 0.155);
+              ctx.font = `italic ${cf}px Crimson Pro, Georgia, serif`;
+              const tw = ctx.measureText(msg.text).width;
+              const pad = 8;
+              const bw = tw + pad * 2,
+                bh = cf + pad * 1.4;
+              const bx = cx - bw / 2;
+              const by = sy - tileS * 0.28 - bh - nfs - 4;
+
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = "rgba(7,7,13,0.93)";
+              rr(bx, by, bw, bh, 4);
+              ctx.fill();
+              ctx.strokeStyle = pl.color + "80";
+              ctx.lineWidth = 1;
+              rr(bx, by, bw, bh, 4);
+              ctx.stroke();
+              ctx.fillStyle = "#e8e0cc";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText(msg.text, cx, by + bh / 2);
+              ctx.globalAlpha = 1;
+            }
+          }
+        });
+
+        // Vignette
+        const v = ctx.createRadialGradient(
+          W / 2,
+          H / 2,
+          H * 0.2,
+          W / 2,
+          H / 2,
+          H * 0.9,
+        );
+        v.addColorStop(0, "transparent");
+        v.addColorStop(1, "rgba(0,0,0,0.52)");
+        ctx.fillStyle = v;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      function rr(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+    </script>
+  </body>
+</html>
