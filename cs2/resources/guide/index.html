@@ -124,39 +124,6 @@
         max-width: 100%;
         border: 1px solid #ddd;
       }
-
-      .drill-subsection {
-        border-left: 2px solid #c4b000;
-        margin: 10px 0;
-        padding-left: 10px;
-      }
-
-      .drill-header {
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        user-select: none;
-        color: #333;
-        padding: 5px;
-        background-color: #f8f8f8;
-      }
-
-      .drill-header:hover {
-        background-color: #f0f0f0;
-      }
-
-      .drill-content {
-        padding-left: 10px;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s;
-      }
-
-      .expanded > .drill-content {
-        max-height: 2000px;
-        padding-bottom: 5px;
-      }
     </style>
   </head>
   <body>
@@ -541,79 +508,8 @@
             </ul>`,
             },
             {
-              title: "Practice Drills - Priority Order",
-              content: `<div class="drill-container">
-              <!-- Drills will be generated here -->
-            </div>`,
-              drills: [
-                {
-                  title: "Counter Strafing Drill",
-                  content: `<ul>
-                  <li>Practices: counter strafing, micro adjusting and effective weapons firing</li>
-                  <li>Go onto a map like csstats aim</li>
-                  <li>Face the wall and being to strafe to the right</li>
-                  <li>Counter strafe onto a bot's head</li>
-                  <li>If you miss the head, microadjust</li>
-                  <li>Make sure you're aiming at their head</li>
-                  <li>Fire 3-4 bullets</li>
-                  <li>Repeat until you hit the wall, then go left</li>
-                </ul>
-                <div class="video-container">
-                  <iframe width="560" height="315" src="https://www.youtube.com/embed/18aqDxU0Yxg" frameborder="0" allowfullscreen></iframe>
-                </div>`,
-                },
-                {
-                  title: "Mouse Swiping Drill",
-                  content: `<ul>
-                  <li>Practices: mouse swiping, flicking, micro adjusting and effective weapons firing</li>
-                  <li>Swipe the mouse a couple of times</li>
-                  <li>Check if there's a bot</li>
-                  <li>Flick to their head</li>
-                  <li>Micro adjust to their head</li>
-                  <li>Make sure you're aiming at their head</li>
-                  <li>Fire 3-4 bullets</li>
-                  <li>Repeat</li>
-                </ul>
-                <div class="video-container">
-                  <iframe width="560" height="315" src="https://www.youtube.com/embed/m9nJlNwBgEE" frameborder="0" allowfullscreen></iframe>
-                </div>`,
-                },
-                {
-                  title: "Fast Aim / Reflex - Standing Drill",
-                  content: `<ul>
-                  <li>Practices: tracking, mouse swiping, flicking, micro adjusting and effective weapons firing</li>
-                  <li>Mouse swipe until you spot a bot</li>
-                  <li>Track the bots head for 1-2 seconds</li>
-                  <li>Fire 3-4 bullets while tracking</li>
-                  <li>Repeat</li>
-                </ul>
-                <div class="video-container">
-                  <iframe width="560" height="315" src="https://www.youtube.com/embed/LZodC4fCtug" frameborder="0" allowfullscreen></iframe>
-                </div>`,
-                },
-                {
-                  title: "Fast Aim / Reflex - Strafing Drill",
-                  content: `<ul>
-                  <li>Practices tracking, mouse swiping and effective weapons firing</li>
-                  <li>Begin to strafe</li>
-                  <li>Mouse swipe until you spot a bot</li>
-                  <li>Counter strafe</li>
-                  <li>Flick to their head</li>
-                  <li>Micro adjust to their head</li>
-                  <li>Track their head for just a bit longer then you would in game, about 0.5-1 seconds</li>
-                  <li>Fire 3-4 bullets while tracking</li>
-                  <li>Repeat</li>
-                </ul>
-                <div class="video-container">
-                  <iframe width="560" height="315" src="https://www.youtube.com/embed/KZhT4gs0gNY" frameborder="0" allowfullscreen></iframe>
-                </div>`,
-                },
-              ],
-            },
-            {
               title: "How to Practice Drills",
               content: `<ul>
-              <li>Above is in priority order</li>
               <li>Take the highest priority you are uncomfortable with and do focused practice for 5 minutes</li>
               <li>Feel free to take as much focused practice you want, pushing past 20 minutes is difficult</li>
               <li>You can however, change focus to a different drill and restart the 5-20 minutes focus</li>
@@ -658,35 +554,6 @@
             subsectionContent.className = "subsection-content";
             subsectionContent.innerHTML = subsection.content;
 
-            // Special handling for practice drills
-            if (
-              subsection.title === "Practice Drills - Priority Order" &&
-              subsection.drills
-            ) {
-              const drillContainer = document.querySelector(".drill-container");
-
-              if (subsection.drills && subsection.drills.length > 0) {
-                subsection.drills.forEach((drill, drillIndex) => {
-                  const drillElement = document.createElement("div");
-                  drillElement.className = "drill-subsection";
-                  drillElement.id = `drill-${sectionIndex}-${subsectionIndex}-${drillIndex}`;
-
-                  const drillHeader = document.createElement("div");
-                  drillHeader.className = "drill-header";
-                  drillHeader.innerHTML = `${drill.title} <span class="arrow">+</span>`;
-                  drillHeader.onclick = () => toggleSection(drillElement);
-
-                  const drillContent = document.createElement("div");
-                  drillContent.className = "drill-content";
-                  drillContent.innerHTML = drill.content;
-
-                  drillElement.appendChild(drillHeader);
-                  drillElement.appendChild(drillContent);
-                  subsectionContent.appendChild(drillElement);
-                });
-              }
-            }
-
             subsectionElement.appendChild(subsectionHeader);
             subsectionElement.appendChild(subsectionContent);
             sectionContent.appendChild(subsectionElement);
@@ -729,23 +596,6 @@
         }
       }
 
-      function toggleDrill(element) {
-        element.classList.toggle("expanded");
-
-        // Update the arrow
-        const arrow = element.querySelector(".drill-header .arrow");
-        if (element.classList.contains("expanded")) {
-          arrow.textContent = "-";
-        } else {
-          arrow.textContent = "+";
-        }
-
-        // Make sure parent subsection is expanded too
-        let parentSubsection = element.closest(".subsection");
-        if (!parentSubsection.classList.contains("expanded")) {
-          toggleSubsection(parentSubsection);
-        }
-      }
     </script>
   </body>
 </html>

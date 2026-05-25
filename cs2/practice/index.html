@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Practice Drills — CS2</title>
+    <style>
+      :root {
+        --bg: #f5f5f5;
+        --gold: #c4b000;
+        --accent: #7c4dff;
+        --text: #333;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Nunito", Georgia, serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.4;
+        font-size: 1rem;
+      }
+
+      .content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 0 0 10px;
+        font-size: 1.5rem;
+        border-bottom: 2px solid var(--gold);
+        padding-bottom: 10px;
+      }
+
+      .page-lead {
+        margin: 0 0 1rem;
+      }
+
+      .toc {
+        margin: 0 0 1.5rem;
+        border-left: 3px solid var(--accent);
+        background: #fff;
+        padding: 10px 10px 10px 0;
+      }
+
+      .toc ol {
+        margin: 0;
+        padding-left: 1.5rem;
+      }
+
+      .toc li {
+        margin-bottom: 4px;
+      }
+
+      .toc li:last-child {
+        margin-bottom: 0;
+      }
+
+      .toc a {
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      .drill-block {
+        background: #fff;
+        border-left: 3px solid var(--gold);
+        margin-bottom: 8px;
+        scroll-margin-top: 12px;
+      }
+
+      .drill-block summary {
+        padding: 10px 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+      }
+
+      .drill-block summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .drill-block summary::before {
+        content: "+ ";
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .drill-block[open] summary::before {
+        content: "− ";
+      }
+
+      .drill-block summary:hover {
+        background: #fafafa;
+      }
+
+      .drill-body {
+        padding: 0 12px 12px;
+        border-top: 1px solid #eee;
+      }
+
+      .drill-practices {
+        margin: 10px 0 8px;
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .steps {
+        margin: 0 0 10px;
+        padding-left: 1.25rem;
+      }
+
+      .steps li {
+        margin-bottom: 3px;
+      }
+
+      .video-wrap {
+        position: relative;
+        width: 100%;
+        max-width: 560px;
+        padding-bottom: 56.25%;
+        background: #111;
+      }
+
+      .video-wrap iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ddd;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="content">
+      <h1>Practice Drills</h1>
+      <p class="page-lead">
+        These drills are in priority order. Work through them in order. Take the top most drill you are still uncomfortable
+        with and drill them for 5 minutes (up to 20 if you can stay focused).
+        When a drill feels consistent, move to the next one.
+      </p>
+
+      <nav class="toc" aria-label="Drill list">
+        <ol>
+          <li><a href="#drill-1">Counter-strafing — until consistent</a></li>
+          <li><a href="#drill-2">Mouse swiping — until boring to practice</a></li>
+          <li><a href="#drill-3">Fast aim / reflex (standing)</a></li>
+          <li><a href="#drill-4">Fast aim / reflex (strafing)</a></li>
+        </ol>
+      </nav>
+
+      <details id="drill-1" class="drill-block" open>
+        <summary>1. Counter-strafing drill</summary>
+        <div class="drill-body">
+          <p class="drill-practices">
+            Practices: counter strafing, micro adjusting, effective weapons firing
+          </p>
+          <ol class="steps">
+            <li>Go onto a map like csstats aim</li>
+            <li>Face the wall and begin to strafe to the right</li>
+            <li>Counter strafe onto a bot's head</li>
+            <li>If you miss the head, microadjust</li>
+            <li>Make sure you're aiming at their head</li>
+            <li>Fire 3–4 bullets</li>
+            <li>Repeat until you hit the wall, then go left</li>
+          </ol>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/18aqDxU0Yxg"
+              title="Counter strafing drill"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </details>
+
+      <details id="drill-2" class="drill-block">
+        <summary>2. Mouse swiping drill</summary>
+        <div class="drill-body">
+          <p class="drill-practices">
+            Practices: mouse swiping, flicking, micro adjusting, effective weapons firing
+          </p>
+          <ol class="steps">
+            <li>Swipe the mouse a couple of times</li>
+            <li>Check if there's a bot</li>
+            <li>Flick to their head</li>
+            <li>Micro adjust to their head</li>
+            <li>Make sure you're aiming at their head</li>
+            <li>Fire 3–4 bullets</li>
+            <li>Repeat</li>
+          </ol>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/m9nJlNwBgEE"
+              title="Mouse swiping drill"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </details>
+
+      <details id="drill-3" class="drill-block">
+        <summary>3. Fast aim / reflex — standing drill</summary>
+        <div class="drill-body">
+          <p class="drill-practices">
+            Practices: tracking, mouse swiping, flicking, micro adjusting, effective
+            weapons firing
+          </p>
+          <ol class="steps">
+            <li>Mouse swipe until you spot a bot</li>
+            <li>Track the bot's head for 1–2 seconds</li>
+            <li>Fire 3–4 bullets while tracking</li>
+            <li>Repeat</li>
+          </ol>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/LZodC4fCtug"
+              title="Fast aim standing drill"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </details>
+
+      <details id="drill-4" class="drill-block">
+        <summary>4. Fast aim / reflex — strafing drill</summary>
+        <div class="drill-body">
+          <p class="drill-practices">
+            Practices: tracking, mouse swiping, counter strafing, effective weapons firing
+          </p>
+          <ol class="steps">
+            <li>Begin to strafe</li>
+            <li>Mouse swipe until you spot a bot</li>
+            <li>Counter strafe</li>
+            <li>Flick to their head</li>
+            <li>Micro adjust to their head</li>
+            <li>
+              Track their head for just a bit longer than you would in game, about 0.5–1
+              seconds
+            </li>
+            <li>Fire 3–4 bullets while tracking</li>
+            <li>Repeat</li>
+          </ol>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/KZhT4gs0gNY"
+              title="Fast aim strafing drill"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <script>
+      function openDrill(id) {
+        const drill = document.getElementById(id);
+        if (drill) drill.open = true;
+      }
+
+      document.querySelectorAll(".toc a").forEach((link) => {
+        link.addEventListener("click", () => {
+          openDrill(link.getAttribute("href").slice(1));
+        });
+      });
+
+      if (location.hash) {
+        openDrill(location.hash.slice(1));
+      }
+
+      window.addEventListener("hashchange", () => {
+        if (location.hash) openDrill(location.hash.slice(1));
+      });
+    </script>
+  </body>
+</html>
