@@ -205,9 +205,21 @@
         min-height: 2.25rem;
       }
 
+      .score-block {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
       .actions .score {
         margin: 0;
         font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .actions .word-sub {
+        margin: 0;
+        font-size: 0.75rem;
         color: var(--muted);
       }
 
@@ -219,15 +231,36 @@
         visibility: visible;
       }
 
+      .about {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+        font-size: 0.9rem;
+      }
+
+      .about .essay {
+        margin: 0;
+      }
+
+      .about .essay p {
+        margin: 0 0 0.85rem;
+        color: var(--muted);
+      }
+
+      .about .essay p:last-child {
+        margin-bottom: 0;
+      }
+
       footer {
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         padding-top: 1rem;
         border-top: 1px solid var(--line);
         font-size: 0.85rem;
         color: var(--muted);
       }
 
-      footer a {
+      footer a,
+      .about a {
         color: inherit;
       }
 
@@ -249,17 +282,32 @@
       </p>
       <ol class="choices" id="choices"></ol>
       <div class="actions">
-        <p id="score" class="score">0 answered · 0 correct</p>
+        <div class="score-block">
+          <p id="score" class="score">0 answered · 0 correct</p>
+          <p id="word-count" class="word-sub" hidden></p>
+        </div>
         <button type="button" id="next" disabled>Next word</button>
       </div>
     </section>
 
+    <section class="about" id="about" hidden>
+      <div class="essay">
+        <p>
+          The English language is estimated to hold roughly a million words, though that figure shifts as slang, jargon, and new coinages arrive. Major dictionaries paint a smaller picture of what is in active use: the Oxford English Dictionary, for example, lists about 171,476 "used currently". No one person carries the whole language in their head; by age 20, the average English speaker is estimated to know about 20,000 words, by 30 about 27,000, and by 60 about 32,000.
+        </p>
+        <p>
+          We lean on a few thousand words day to day, recognise many more when we read or hear them, and leave the vast majority to references. Vocabulary is personal and uneven, you might know a word from work, from a region, or from a single memorable line, while never needing another ten thousand entries sitting quietly in the dictionary.
+        </p>
+      </div>
+    </section>
+
     <footer>
-      <span id="word-count" hidden></span>
+      <p>Definitions from <a href="https://en.wiktionary.org/" rel="noopener">Wiktionary</a>.</p>
     </footer>
 
     <script>
       const statusEl = document.getElementById("status");
+      const aboutEl = document.getElementById("about");
       const wordCountEl = document.getElementById("word-count");
       const scoreEl = document.getElementById("score");
       const quizEl = document.getElementById("quiz");
@@ -438,14 +486,15 @@
 
       async function init() {
         try {
-          const res = await fetch("./data/words.json");
+          const res = await fetch("./sarmie/data/words.json");
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           words = await res.json();
           if (words.length < 10) throw new Error("Not enough words loaded");
           indexWordsByPos();
 
-          wordCountEl.innerHTML = `${words.length.toLocaleString()} total words, from <a href="https://en.wiktionary.org/" rel="noopener">Wiktionary</a>`;
+          wordCountEl.textContent = `${words.length.toLocaleString()} words in this dictionary`;
           wordCountEl.hidden = false;
+          aboutEl.hidden = false;
           updateScore();
           statusEl.hidden = true;
           quizEl.hidden = false;
