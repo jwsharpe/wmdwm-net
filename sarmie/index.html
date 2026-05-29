@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sarmie</title>
+    <style>
+      :root {
+        --bg: #f8f6f0;
+        --text: #1c1c1c;
+        --muted: #5c5c5c;
+        --line: #c8c4bc;
+        --correct-bg: #dce8d8;
+        --correct-border: #5f7d56;
+        --correct-ink: #2a3828;
+        --wrong-bg: #e8d9d5;
+        --wrong-border: #8f6358;
+        --wrong-ink: #452c26;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0 auto;
+        max-width: 36rem;
+        min-height: 100vh;
+        padding: 1.5rem 1.25rem 2rem;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", Times, serif;
+        line-height: 1.5;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .top-bar {
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .actions button {
+        font: inherit;
+        padding: 0.35rem 0.75rem;
+        cursor: pointer;
+        background: transparent;
+        color: inherit;
+        border: 1px solid var(--line);
+        border-radius: 0;
+      }
+
+      .status {
+        color: var(--muted);
+        margin-bottom: 1rem;
+      }
+
+      .status.error {
+        color: var(--text);
+      }
+
+      .question {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        margin: 0 0 1rem;
+        line-height: 1.5;
+      }
+
+      .question-lead {
+        font-size: 0.95rem;
+        font-weight: 400;
+        color: var(--muted);
+      }
+
+      #question-word {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .choices {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .choices button {
+        width: 100%;
+        text-align: left;
+        padding: 0.65rem 0.75rem;
+        font: inherit;
+        cursor: pointer;
+        border: 1px solid var(--line);
+        background: transparent;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .choice-from {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        min-height: 2.55em;
+        font-style: italic;
+        color: var(--muted);
+        width: 100%;
+        padding-top: 0.2rem;
+        border-top: 1px dashed var(--line);
+        user-select: none;
+      }
+
+      .choices button:not(.revealed) .choice-from {
+        letter-spacing: 0.02em;
+        opacity: 0.55;
+      }
+
+      .choices button.revealed .choice-from {
+        letter-spacing: normal;
+        opacity: 1;
+        user-select: text;
+      }
+
+      .choices button:hover:not(:disabled) {
+        border-color: var(--text);
+      }
+
+      .choices button:disabled {
+        cursor: default;
+      }
+
+      .choices button.correct {
+        border: 2px solid var(--correct-border);
+        background: var(--correct-bg);
+      }
+
+      .choices button.correct .choice-from {
+        color: var(--correct-ink);
+      }
+
+      .choices button.wrong {
+        border: 2px solid var(--wrong-border);
+        background: var(--wrong-bg);
+      }
+
+      .choices button.wrong .choice-from {
+        color: var(--wrong-ink);
+      }
+
+      .choices.answered button.revealed:not(.correct):not(.wrong) {
+        border-color: var(--line);
+        background: transparent;
+      }
+
+      .choices.answered button.revealed:not(.correct):not(.wrong) .choice-def {
+        color: #4a4a4a;
+      }
+
+      .choices.answered button.revealed:not(.correct):not(.wrong) .choice-from,
+      .choices.answered button.revealed:not(.correct):not(.wrong) .choice-from a.wikt-link {
+        color: var(--muted);
+      }
+
+      .choices button.correct.revealed .choice-def {
+        color: var(--correct-ink);
+      }
+
+      .choices button.wrong.revealed .choice-def {
+        color: var(--wrong-ink);
+      }
+
+      .choice-from a.wikt-link {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 0.12em;
+      }
+
+      .choices.answered button.revealed {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .choices.answered button.revealed a.wikt-link {
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        min-height: 2.25rem;
+      }
+
+      .actions .score {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      #next {
+        visibility: hidden;
+      }
+
+      #next.is-visible {
+        visibility: visible;
+      }
+
+      footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      footer a {
+        color: inherit;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top-bar">
+      <h1>Sarmie</h1>
+    </header>
+    <p id="status" class="status">Loading dictionary…</p>
+
+    <section id="quiz" hidden>
+      <p class="question" id="question">
+        <span class="question-lead">Great Θώθ - what does this mean?</span>
+        <span id="question-word"></span>
+      </p>
+      <ol class="choices" id="choices"></ol>
+      <div class="actions">
+        <p id="score" class="score">0 answered · 0 correct</p>
+        <button type="button" id="next" disabled>Next word</button>
+      </div>
+    </section>
+
+    <footer>
+      <span id="word-count" hidden></span>
+    </footer>
+
+    <script>
+      const statusEl = document.getElementById("status");
+      const wordCountEl = document.getElementById("word-count");
+      const scoreEl = document.getElementById("score");
+      const quizEl = document.getElementById("quiz");
+      const questionWordEl = document.getElementById("question-word");
+      const choicesEl = document.getElementById("choices");
+      const nextBtn = document.getElementById("next");
+
+      let words = [];
+      /** @type {Map<string, number[]>} */
+      let indicesByPos = new Map();
+      let current = null;
+      let answered = false;
+      let answeredTotal = 0;
+      let correctTotal = 0;
+
+      const MIN_CHOICES = 5;
+      const MIN_POOL = MIN_CHOICES;
+      const WIKTIONARY = "https://en.wiktionary.org/wiki/";
+
+      function displayDef(entry) {
+        return entry.source ?? entry.definition;
+      }
+
+      const MASK_LENGTH = 10;
+
+      function maskWord() {
+        return "•".repeat(MASK_LENGTH);
+      }
+
+      function updateScore() {
+        scoreEl.textContent = `${answeredTotal.toLocaleString()} answered · ${correctTotal.toLocaleString()} correct`;
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function wiktionaryUrl(word) {
+        return `${WIKTIONARY}${encodeURIComponent(word)}`;
+      }
+
+      function revealHeadwordLink(fromEl) {
+        const word = fromEl.dataset.word;
+        fromEl.innerHTML = `<a class="wikt-link" href="${wiktionaryUrl(word)}" target="_blank" rel="noopener noreferrer">${escapeHtml(word)}</a>`;
+      }
+
+      function indexWordsByPos() {
+        indicesByPos = new Map();
+        for (let i = 0; i < words.length; i++) {
+          const pos = words[i].partOfSpeech;
+          if (!indicesByPos.has(pos)) indicesByPos.set(pos, []);
+          indicesByPos.get(pos).push(i);
+        }
+      }
+
+      function posPool(partOfSpeech) {
+        return indicesByPos.get(partOfSpeech) ?? [];
+      }
+
+      function shuffle(items) {
+        const a = items.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function randomIndex(exclude, partOfSpeech) {
+        const excludeSet = new Set(exclude);
+        const candidates = posPool(partOfSpeech).filter((i) => !excludeSet.has(i));
+        if (!candidates.length) return null;
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+
+      function pickQuestion() {
+        const viable = [];
+        for (const indices of indicesByPos.values()) {
+          if (indices.length >= MIN_POOL) viable.push(...indices);
+        }
+        const idx = viable[Math.floor(Math.random() * viable.length)];
+        return { entry: words[idx], idx };
+      }
+
+      function buildChoices(correct, correctIdx) {
+        const partOfSpeech = correct.partOfSpeech;
+        const correctText = displayDef(correct);
+        const options = [{ text: correctText, word: correct.word, correct: true }];
+        const usedDefs = new Set([correctText]);
+        const usedIdx = [correctIdx];
+
+        let guard = 0;
+        while (options.length < MIN_CHOICES && guard++ < 500) {
+          const idx = randomIndex(usedIdx, partOfSpeech);
+          if (idx == null) break;
+          usedIdx.push(idx);
+          const entry = words[idx];
+          const def = displayDef(entry);
+          if (usedDefs.has(def)) continue;
+          usedDefs.add(def);
+          options.push({ text: def, word: entry.word, correct: false });
+        }
+
+        return shuffle(options);
+      }
+
+      function renderQuestion() {
+        answered = false;
+        const { entry, idx } = pickQuestion();
+        current = entry;
+        questionWordEl.textContent = current.word;
+        nextBtn.classList.remove("is-visible");
+        nextBtn.disabled = true;
+
+        const options = buildChoices(current, idx);
+        choicesEl.classList.remove("answered");
+        choicesEl.replaceChildren();
+
+        options.forEach((option) => {
+          const li = document.createElement("li");
+          const btn = document.createElement("button");
+          btn.type = "button";
+
+          const def = document.createElement("span");
+          def.className = "choice-def";
+          def.textContent = option.text;
+
+          const from = document.createElement("span");
+          from.className = "choice-from";
+          from.dataset.word = option.word;
+          from.textContent = maskWord();
+          from.setAttribute("aria-hidden", "true");
+
+          btn.dataset.correct = String(option.correct);
+          btn.append(def, from);
+          btn.addEventListener("click", (e) => {
+            if (answered || e.target.closest("a")) return;
+            selectAnswer(btn, option);
+          });
+          li.appendChild(btn);
+          choicesEl.appendChild(li);
+        });
+      }
+
+      function selectAnswer(button, option) {
+        if (answered) return;
+        answered = true;
+        choicesEl.classList.add("answered");
+
+        const buttons = choicesEl.querySelectorAll("button");
+        buttons.forEach((btn) => {
+          btn.classList.add("revealed");
+          const from = btn.querySelector(".choice-from");
+          revealHeadwordLink(from);
+          from.removeAttribute("aria-hidden");
+          if (btn.dataset.correct === "true") {
+            btn.classList.add("correct");
+          } else if (btn === button && !option.correct) {
+            btn.classList.add("wrong");
+          }
+        });
+
+        answeredTotal += 1;
+        if (option.correct) correctTotal += 1;
+        updateScore();
+
+        nextBtn.classList.add("is-visible");
+        nextBtn.disabled = false;
+      }
+
+      nextBtn.addEventListener("click", renderQuestion);
+
+      async function init() {
+        try {
+          const res = await fetch("./data/words.json");
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          words = await res.json();
+          if (words.length < 10) throw new Error("Not enough words loaded");
+          indexWordsByPos();
+
+          wordCountEl.innerHTML = `${words.length.toLocaleString()} total words, from <a href="https://en.wiktionary.org/" rel="noopener">Wiktionary</a>`;
+          wordCountEl.hidden = false;
+          updateScore();
+          statusEl.hidden = true;
+          quizEl.hidden = false;
+          renderQuestion();
+        } catch (err) {
+          statusEl.textContent = `Could not load dictionary: ${err.message}`;
+          statusEl.classList.add("error");
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
