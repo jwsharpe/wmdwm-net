@@ -490,6 +490,7 @@
       async function init() {
         try {
           const res = await fetch("./sarmie/data/words.json");
+          // const res = await fetch("./data/words.json");
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           words = await res.json();
           if (words.length < 10) throw new Error("Not enough words loaded");

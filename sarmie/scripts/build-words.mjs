@@ -132,13 +132,14 @@ async function main() {
     CONCURRENCY,
   );
 
-  const prefixDrop = { de: 0, un: 0 };
+  const prefixDrop = { de: 0, un: 0, counter: 0 };
   for (const word of [...byWord.keys()]) {
     const reason = stemPrefixRejectReason(word, byWord);
     if (reason) {
       byWord.delete(word);
       if (reason === "prefix-de") prefixDrop.de += 1;
       else if (reason === "prefix-un") prefixDrop.un += 1;
+      else if (reason === "prefix-counter") prefixDrop.counter += 1;
     }
   }
 
@@ -157,7 +158,7 @@ async function main() {
   console.log(`Dropped: ${blocklistDrop} blocklisted words`);
   console.log(`Dropped: ${commonDrop} top-${EXCLUDE_COMMON_COUNT} common words`);
   console.log(
-    `Dropped: ${prefixDrop.de} de- and ${prefixDrop.un} un- prefixed words (stem also in list)`,
+    `Dropped: ${prefixDrop.de} de-, ${prefixDrop.un} un-, and ${prefixDrop.counter} counter- prefixed words (stem also in list)`,
   );
   console.log("Top reject reasons (no qualifying sense):");
   Object.entries(rejectCounts)
