@@ -282,7 +282,8 @@
 
       async function init() {
         try {
-          const res = await fetch("./data/albums.json");
+          // const res = await fetch("./data/albums.json");
+          const res = await fetch("./formie/data/albums.json");
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const albums = await res.json();
           if (!Array.isArray(albums) || albums.length === 0) {
