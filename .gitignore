@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 noita/scripts/
 noita/texts/
+noita/*.json
