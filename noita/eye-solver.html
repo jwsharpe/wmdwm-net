@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eye Messages — Plaintext Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0e13; --panel:#12151d; --panel2:#161a24; --line:#242a37;
+  --ink:#dcd7c9; --mut:#8b8676; --dim:#5a5648;
+  --violet:#b78bff; --violet-d:#7a5bd6;
+  --amber:#e6a94b; --teal:#54cfc6; --rose:#e0668a; --blue:#6ea6ff;
+  --ok:#5fca7d; --bad:#e05a6b;
+  --a:#c76b4a; --b:#5aa06a; --g:#8a74e0;
+  --cw:15px; --rh:40px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+body{padding:0 0 60px}
+a{color:var(--violet)}
+::selection{background:var(--violet-d);color:#fff}
+
+header{padding:34px clamp(16px,4vw,54px) 20px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#10131b,#0c0e13)}
+.eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--violet);font-weight:700;margin:0 0 10px}
+h1{font-family:"Syne",sans-serif;font-weight:800;font-size:clamp(26px,4.4vw,42px);line-height:1.02;margin:0;letter-spacing:-.01em}
+h1 .thin{color:var(--mut);font-weight:600}
+.lede{max-width:76ch;color:var(--mut);margin:14px 0 0;font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:2px;padding:7px 11px;font-size:11.5px;color:var(--mut)}
+.chip b{color:var(--ink);font-weight:700}.chip .k{color:var(--amber)}
+
+.toolbar{position:sticky;top:0;z-index:40;background:rgba(12,14,19,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+  padding:10px clamp(16px,4vw,54px)}
+.bar-lens{border-bottom:1px solid var(--line);padding-top:12px;padding-bottom:10px}
+.bar-pt{padding-top:10px;padding-bottom:12px;gap:12px;align-items:flex-start}
+.bar-pt .pt-actions{flex:1 1 auto;min-width:0}
+.bar-pt .verdict{margin:0;flex:1 1 220px;max-width:420px}
+.bar-pt .vlist{flex:1 1 100%;max-height:100px;margin:0;padding:0 0 0 2px}
+.grp{display:flex;align-items:center;gap:0}
+.grp>.lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-right:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{appearance:none;border:0;background:transparent;color:var(--mut);font-family:inherit;font-size:12px;
+  padding:7px 12px;cursor:pointer;border-right:1px solid var(--line);transition:background .12s,color .12s}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink);background:#1b202b}
+.seg button[aria-pressed="true"]{background:var(--violet);color:#0c0e13;font-weight:700}
+.slider{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--mut)}
+.slider input[type=range]{width:120px;accent-color:var(--violet)}
+.slider .val{color:var(--ink);font-weight:700;min-width:20px;text-align:center}
+.toggle{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);cursor:pointer;user-select:none}
+.toggle input{appearance:none;width:32px;height:17px;border-radius:9px;background:#262b38;position:relative;cursor:pointer;transition:background .15s;border:1px solid var(--line)}
+.toggle input:checked{background:var(--violet-d)}
+.toggle input::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:var(--ink);top:1px;left:1px;transition:left .15s}
+.toggle input:checked::after{left:16px}
+.iso-tools{display:contents}
+.iso-tools.is-dim{opacity:.35;pointer-events:none}
+
+.wrap{display:grid;grid-template-columns:1fr;gap:18px;align-items:stretch;
+  padding:22px clamp(16px,4vw,54px) 0}
+.stage{min-width:0;display:flex;flex-direction:column}
+.pane-lbl{font-family:"Syne",sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mut);font-weight:700;margin:0 0 10px}
+
+.matrix-shell{display:flex;border:1px solid var(--line);border-radius:4px;background:var(--panel);overflow:hidden;flex:1}
+.labels{flex:0 0 auto;background:var(--panel2);border-right:1px solid var(--line);padding-top:22px}
+.lrow{height:var(--rh);display:flex;align-items:center;gap:8px;padding:0 12px;white-space:nowrap}
+.lrow .id{font-weight:700;color:var(--ink);width:28px}
+.lrow .fam{width:6px;height:15px;border-radius:1px;flex:0 0 auto}
+.lrow .len{color:var(--dim);font-size:11px;width:30px;text-align:right}
+.fam-a{background:var(--a)}.fam-b{background:var(--b)}.fam-g{background:var(--g)}
+.scroll{overflow-x:auto;overflow-y:hidden;flex:1 1 auto;position:relative}
+.ruler{height:22px;position:relative}
+.ruler .tick{position:absolute;top:0;height:22px;border-left:1px solid var(--line);color:var(--dim);font-size:10px;padding-left:3px;line-height:22px}
+.grid{position:relative}
+.cell{position:absolute;width:var(--cw);height:var(--rh);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;padding:2px 0;cursor:text;user-select:none;transition:background .07s,opacity .07s}
+.cell:hover,.cell.is-focus{outline:1px solid var(--violet);outline-offset:-1px;z-index:2}
+.cell .ct{font-size:9px;line-height:1;color:var(--dim);height:10px}
+.cell .ptg{font-size:12.5px;line-height:1;height:15px;display:flex;align-items:center;color:var(--ink)}
+.grid.lens-raw .ct{font-size:12.5px;height:15px;font-weight:500;color:var(--ink)}
+.grid.lens-raw .ptg{font-size:9px;height:10px;opacity:.3}
+.grid.lens-cols .ct{font-size:11px;height:12px;font-weight:600}
+.grid.lens-cols .ptg{opacity:.22;font-size:9px;height:10px}
+.grid.iso-only .cell:not(.is-iso-edit){
+  opacity:.22;cursor:default}
+.grid.iso-only .cell:not(.is-iso-edit) .ct,
+.grid.iso-only .cell:not(.is-iso-edit) .ptg{opacity:.55}
+.grid.iso-only .cell.is-iso-edit .ct{color:var(--ink);opacity:1}
+.grid.iso-only .cell.is-iso-edit .ptg{opacity:1}
+label.strict-tog{
+  color:var(--mut);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:5px 10px 5px 8px;
+  background:var(--panel2)}
+label.strict-tog:has(input:checked){
+  color:var(--teal);
+  border-color:var(--teal);
+  background:color-mix(in srgb,var(--teal) 12%,var(--panel2))}
+label.strict-tog:has(input:checked) input{background:var(--teal)}
+label.strict-tog:has(input:checked) input::after{background:#041512}
+.cell.is-empty .ptg{color:var(--dim);opacity:.45}
+.cell.is-space .ptg{color:var(--mut)}
+.cell.is-ok{background:color-mix(in srgb,var(--ok) 30%,#0c0e13)}
+.cell.is-ok .ptg{color:var(--ok)}
+.cell.is-bad{background:color-mix(in srgb,var(--bad) 34%,#0c0e13)}
+.cell.is-bad .ptg{color:#ffd9de}
+.cell.is-single{background:color-mix(in srgb,var(--amber) 12%,#0c0e13)}
+.cell.is-single .ptg{color:var(--amber)}
+.cell.is-iso-ghost .ptg{font-weight:700}
+.rowbg{position:absolute;left:0;height:var(--rh);opacity:.06;pointer-events:none}
+svg.overlay{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+
+.hint{color:var(--dim);font-size:11.5px;margin:12px 2px 0}
+
+.pt-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pt-alpha{margin-left:auto;font-size:12px;color:var(--mut)}
+.pt-alpha b{color:var(--amber);font-weight:700}
+
+.support{display:grid;grid-template-columns:1.2fr 1fr 0.8fr;gap:14px;
+  padding:18px clamp(16px,4vw,54px) 0}
+@media (max-width:1100px){.support{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:4px;background:var(--panel);padding:15px;margin:0}
+.card h3{font-family:"Syne",sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:0 0 12px;font-weight:700;display:flex;justify-content:space-between}
+.card h3 .cnt{color:var(--dim);font-weight:600;letter-spacing:0}
+.isolist{max-height:260px;overflow:auto;margin:-4px -4px 0;padding:0 4px}
+.iso{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid transparent;border-radius:3px;cursor:pointer}
+.iso:hover{background:#1a1f2a}
+.iso[aria-selected="true"]{background:#1c2130;border-color:var(--violet-d)}
+.iso .score{font-weight:700;color:var(--amber);min-width:34px;text-align:right;font-size:12px}
+.iso .pat{letter-spacing:1px;font-size:12.5px;overflow:hidden;text-overflow:ellipsis}
+.iso .meta{margin-left:auto;color:var(--dim);font-size:10.5px;white-space:nowrap}
+.pat .dot{color:#3d4250}
+.empty{color:var(--dim);font-size:12px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed #1e2330;font-size:12px}
+.kv:last-child{border-bottom:0}.kv .k{color:var(--mut)}.kv .v{color:var(--ink);font-weight:500}
+.wpat{font-size:19px;letter-spacing:2px;margin:6px 0 2px;word-break:break-all}
+.occtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.occtags span{font-size:10.5px;padding:2px 6px;border:1px solid var(--line);border-radius:2px;color:var(--mut);cursor:pointer}
+.occtags span:hover{border-color:var(--violet);color:var(--ink)}
+.leg{display:flex;flex-direction:column;gap:7px}
+.leg .li{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--mut)}
+.leg .sw{width:14px;height:14px;border-radius:2px;flex:0 0 auto;border:1px solid #0006}
+.foot{padding:26px clamp(16px,4vw,54px) 0;color:var(--dim);font-size:11.5px;max-width:84ch}
+.foot b{color:var(--mut)}
+.hidden{display:none!important}
+
+.ptbtn{appearance:none;border:1px solid var(--violet-d);background:var(--violet);color:#0c0e13;font-family:inherit;
+  font-weight:700;font-size:12px;padding:8px 14px;border-radius:3px;cursor:pointer}
+.ptbtn.sec{background:transparent;color:var(--mut);border-color:var(--line)}
+.pthelp{font-size:11px;color:var(--dim);margin:10px 0 0;line-height:1.55}
+.verdict{margin-top:10px;padding:10px;border-radius:3px;font-size:12px;border:1px solid var(--line)}
+.verdict.pass{border-color:#2f5c3e;background:#12201a;color:var(--ok)}
+.verdict.fail{border-color:#5c2f37;background:#20141a;color:var(--bad)}
+.verdict.none{color:var(--mut)}
+.vlist{margin:8px 0 0;padding:0;list-style:none;font-size:11.5px;max-height:140px;overflow:auto}
+.vlist li{padding:5px 0;border-bottom:1px dashed #1e2330;color:var(--mut)}
+.vlist li.is-jump{cursor:pointer;border-radius:2px;padding-left:6px;padding-right:6px;margin:0 -6px}
+.vlist li.is-jump:hover{background:#1a1f2a;color:var(--ink)}
+.vlist li.is-jump[aria-current="true"]{background:#1c2130;outline:1px solid var(--violet-d)}
+.vlist li b{color:var(--ink)}
+.tagbad{color:var(--bad)}.tagok{color:var(--ok)}.tagamber{color:var(--amber)}
+.cell.is-pin{outline:2px solid var(--violet);outline-offset:-2px;z-index:3}
+.cell.is-share{outline:1px solid var(--teal);outline-offset:-1px;z-index:2}
+.cell.is-share.is-focus,.cell.is-share.is-pin{outline:2px solid var(--violet);outline-offset:-2px;z-index:3}
+
+.disclaimer{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:rgba(6,8,12,.82);backdrop-filter:blur(6px)}
+.disclaimer[hidden]{display:none!important}
+.disclaimer-card{
+  max-width:520px;width:100%;border:1px solid var(--line);border-radius:4px;
+  background:var(--panel);padding:22px 24px;box-shadow:0 18px 50px #000a}
+.disclaimer-card h2{font-family:"Syne",sans-serif;font-size:18px;margin:0 0 12px;letter-spacing:.02em}
+.disclaimer-card p{margin:0 0 10px;color:var(--mut);font-size:12.5px;line-height:1.55}
+.disclaimer-card .ver{color:var(--dim);font-size:11px;margin:14px 0 0}
+.disclaimer-card .ver b{color:var(--amber)}
+.disclaimer-card .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="disclaimer" id="disclaimer" hidden role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+  <div class="disclaimer-card">
+    <h2 id="disclaimer-title">Before you use this</h2>
+    <p>This workbench is a tool for <b style="color:var(--ink)">validating plaintext guesses against Eye Message isomorphs</b>
+      (gap-pattern shape). Matching shapes never prove a reading; mismatched shapes can falsify one.</p>
+    <p>This site is <b style="color:var(--ink)">&gt;95% AI-generated</b>. All of the UI was created by a machine;
+      simple analytic code was also created by machine. The isomorph generation was reviewed but also initially created by AI.</p>
+    <p class="ver">Version <b id="disclaimer-ver"></b> — this notice returns after every update.</p>
+    <div class="actions"><button class="ptbtn" id="disclaimer-ok" type="button">I understand</button></div>
+  </div>
+</div>
+
+<div class="disclaimer" id="strict-warn" hidden role="dialog" aria-modal="true" aria-labelledby="strict-warn-title">
+  <div class="disclaimer-card">
+    <h2 id="strict-warn-title">Leaving strict mode</h2>
+    <p>Validation is <b style="color:var(--ink)">at its best in strict mode</b>, where typing stays on isomorphs,
+      shared columns, and gap sites — the places plaintext claims are actually constrained.</p>
+    <p>With strict off you can fill arbitrary cells. The checker still runs, but
+      <b style="color:var(--ink)">false positives show up more often</b> (compatible-looking repeats that aren’t
+      real structure). Prefer keeping strict on unless you know why you need free typing.</p>
+    <div class="actions">
+      <button class="ptbtn sec" id="strict-warn-keep" type="button">Keep strict</button>
+      <button class="ptbtn" id="strict-warn-off" type="button">Turn off anyway</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <p class="eyebrow">Noita · Eye Messages · plaintext workbench</p>
+  <h1>Plaintext <span class="thin">/ falsify guesses against gap-pattern shape</span></h1>
+  <p class="lede">GAK is perfectly isomorphic: equal plaintext must land on equal ciphertext gap patterns.
+  Type a candidate on the grid — repeated words that disagree are impossible. Supporting lenses
+  (isomorphs, shared columns, gaps) show where repeats already live in the ciphertext so you know
+  what to test; they don’t replace the check.</p>
+  <div class="chips" id="chips"></div>
+</header>
+
+<div class="toolbar">
+  <div class="bar bar-lens">
+    <div class="grp">
+      <span class="lbl">Lens</span>
+      <div class="seg" id="modeseg">
+        <button data-mode="work" aria-pressed="true">Plaintext</button>
+        <button data-mode="iso">Isomorphs</button>
+        <button data-mode="cols">Shared columns</button>
+        <button data-mode="gaps">Gaps</button>
+        <button data-mode="raw">Raw CT</button>
+      </div>
+    </div>
+    <div class="iso-tools is-dim" id="isotools">
+      <span class="slider" style="color:var(--mut)">Window <b style="color:var(--ink)">30</b></span>
+      <div class="grp" id="repctl"><span class="lbl">Min symbols</span>
+        <div class="seg" id="repseg">
+          <button data-rep="2" aria-pressed="true">≥2</button>
+          <button data-rep="3">≥3</button>
+          <button data-rep="4">≥4</button>
+        </div>
+      </div>
+      <div class="grp"><span class="lbl">Family</span>
+        <div class="seg" id="famseg">
+          <button data-fam="" aria-pressed="true">all</button>
+          <button data-fam="0">α</button>
+          <button data-fam="1">β</button>
+          <button data-fam="2">γ</button>
+        </div>
+      </div>
+      <label class="toggle" id="sharedctl"><input type="checkbox" id="tShared" checked> exclude shared</label>
+    </div>
+    <label class="toggle"><input type="checkbox" id="tFam" checked> family tint</label>
+  </div>
+  <div class="bar bar-pt">
+    <div class="grp"><span class="lbl">Plaintext</span></div>
+    <div class="pt-actions">
+      <button class="ptbtn" id="ptrun">Check shape</button>
+      <button class="ptbtn sec" id="ptclear">Clear</button>
+      <label class="toggle" title="When on, a and A are different plaintext letters"><input type="checkbox" id="tCase" checked> match case</label>
+      <label class="toggle strict-tog" title="Only type on ranked isomorphs, shared columns (2+ agree), gap-2 repeated-bigram slots, and gap-4 ends"><input type="checkbox" id="tIsoOnly" checked> strict</label>
+      <span class="pt-alpha" id="ptalpha">PT alphabet · <b>0</b></span>
+    </div>
+    <div class="verdict none" id="ptverdict">No plaintext checked yet.</div>
+    <ul class="vlist" id="ptdetail"></ul>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stage" id="ptcard">
+    <div class="matrix-shell">
+      <div class="labels" id="labels"></div>
+      <div class="scroll" id="scroll">
+        <div class="ruler" id="ruler"></div>
+        <div class="grid" id="grid" tabindex="0"><svg class="overlay" id="overlay"></svg></div>
+      </div>
+    </div>
+    <p class="hint" id="hint"></p>
+    <p class="pthelp">CT sits above each cell; type plaintext below. · = unknown (Tab / Backspace / Delete).
+    Space = word-break. Strict mode allows isomorphs, shared columns (2+ messages), and gap-2/4 cells. Check slides every fully-filled span.</p>
+  </div>
+</div>
+
+<div class="support" id="support">
+  <div class="card" id="isocard">
+    <h3>Ranked isomorphs <span class="cnt" id="isocount"></span></h3>
+    <div class="isolist" id="isolist"></div>
+    <p class="pthelp" style="margin-top:10px">Click a cell to list every isomorph covering it. Click a pattern to mark sites
+    (ghost A/B/C on empty cells). Type in one site to fill related occurrences.</p>
+  </div>
+  <div class="card" id="detail"><h3>Inspector</h3>
+    <div class="empty">Hover a cell for its window gap pattern. Under the isomorph lens, select a ranked pattern to inspect all hits.</div></div>
+  <div class="card"><h3>Legend</h3><div class="leg" id="legend"></div></div>
+</div>
+
+<div class="foot" id="foot"></div>
+
+<script>
+// Bump APP_VERSION on every release so the first-time disclaimer shows again.
+const APP_VERSION='2026.07.21.4';
+const DISCLAIMER_STORE='eye-solver.disclaimer.ack';
+
+const MSGS = ["Rb%P^-k=8]Jfb^@.q(/n\"=-Q!prH_q53 HSa:.5fOLPJ3P-O3Qh?%8#K[cAQI\\5:>%94g+jX$j3g$SIKphV_oq/0L?>,AY<-`KP","pb%P^-k=8]Jfb^@.q(/n\"=-Q!=+>Tq53 9:V4.5fOLPJ3P-O3QL:[m`Ko<h`!>i7c&A9`qdN1D-15d-)NcYB^r/*i^\"+ahEL*Kd^)B2","Db%P^-k=8]Jfb^@.q(/n\"=-Q!elT)Pbp6`YHQn#0X3OHp&-`=Q`_&Q?-0*M8:m*\\q]BVf5/$bmJE>6 +IhY47YaI72hJ%#:n(%VMm9`]0LVS4_9+:MU\\FB","lb%QkVeN@!J\\:PRp@8W]O,5,QVB9D/XW4)(^-r)L=\\UrJp%Kg#pmOnB9^2*Q^`Tq+b^-O1Tf:7@?`7C@R&!9(EOK:ladp1'M_.U_\\0","_b%QkV\"\\=HnO\\kcg\\\"a'O.Mj[Ip-\\-q6CRHG\"[P?l\"pk!Xc+5(HaMkWG\\J-#6Y\"&Z)f!ZX_d9o'43`\"bi>g0,>aE4-6_2N`[Iqr6nDO1$&1%Do_!`e/K$ZX?.`Z2Lne! N4gi9C(8","Bb%QkV7j+-<:3PcYE\\B<j*1@+23K3qJ$^)NQ@SlZ$KO1co5@L0>E:<IdYBS*ef(&NK2GOK/-A>C^E E%FWE-H9)5+`%oJd+g+P#c]H6.CR]G+\"bQSU1iDkjV8>Vf",";b%QkV\"\\=H\"W)/[2d#D%OmLF!2<l$B\\_Zp1VokPVW3^`.OSfk%+OMZdeo9FMiOdRBMn:oY$X6\\2kK\\[c_JQAHaom'#:^?n:YeH$7:-cJFh+Ga\\9&pbdm[n3","mb%QkV\"\\=H\"W)/[2d#D%O\\5p!hW0rCY3!b2;G1jqG.n 9aKb`Fq78RY>gk:dVYXRgi.5(@:_%E3KbOUBb7i?VFmc+_o&65Sej5%1cE=5\\.rL>$4JC!?VN4H>","Ab%QkV\"\\=H\"W)/[2d#D%OA5[L2<l[B\\_o;,V%QPVWT^he*Y6ZPcU'B@>?3:(BN'>gWBkV)&\\%79MJp9,6l4S^5H)I*Li(Afi&?5h%H]SJb`j]9_J8I"];
+const FAM=[0,0,0,1,1,1,2,2,2], FAMCLASS=['fam-a','fam-b','fam-g'], FAMVAR=['--a','--b','--g'];
+const NAMES=['E1','W1','E2','W2','E3','W3','E4','W4','E5'];
+const N=MSGS.length, MAXLEN=Math.max(...MSGS.map(m=>m.length)), CW=15, RH=40, ALPHA=83;
+const label=r=>NAMES[r];
+const LH=['#b78bff','#54cfc6','#e6a94b','#e0668a','#6ea6ff','#6fd08a','#e08a4b','#d98ad0','#c98ae0','#8ae0c0'];
+const letterHue=ch=>ch==='.'?null:LH[(ch.charCodeAt(0)-65)%LH.length];
+const SEP=new Set([' ']); // real space = word break; '' unknown is separate
+const EMPTY_MARK='·', SPACE_MARK='\u2423'; // ␣
+
+function gapPattern(seg){
+  const cnt={}; for(const c of seg) cnt[c]=(cnt[c]||0)+1;
+  const label={}; let nl=0,out='';
+  for(const c of seg){ if(cnt[c]===1) out+='.';
+    else{ if(!(c in label)){label[c]=String.fromCharCode(65+nl);nl++;} out+=label[c]; } }
+  return out;
+}
+const ctGap=(r,s,l)=>gapPattern(MSGS[r].substr(s,l));
+function extraEq(pat){const c={};for(const ch of pat)if(ch!=='.')c[ch]=(c[ch]||0)+1;let e=0,nd=0;for(const k in c){e+=c[k]-1;nd++;}return[e,nd];}
+function logFact(n){let s=0; for(let i=2;i<=n;i++) s+=Math.log(i); return s;}
+// Wiki: −log₁₀ P(X≥n), X~Poisson(μ), μ = opportunities × 83^(−extra). Tail-sum — not 1−cdf (underflows → fake 300).
+function poissonTailNeglog(mu,n){
+  if(n<=0) return 0;
+  if(!(mu>0)) return Infinity;
+  let logTerm=-mu+n*Math.log(mu)-logFact(n);
+  let term=Math.exp(logTerm);
+  if(!Number.isFinite(term)||term===0) return -logTerm/Math.LN10;
+  let s=term;
+  for(let k=n;k<n+10000;k++){
+    term*=mu/(k+1);
+    if(!(term>0)||term<s*1e-18) break;
+    s+=term;
+  }
+  return -Math.log10(Math.max(s, Number.MIN_VALUE));
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+function trimGapPat(pat){
+  let lo=0, hi=pat.length-1;
+  while(lo<=hi && pat[lo]==='.') lo++;
+  while(hi>=lo && pat[hi]==='.') hi--;
+  if(lo>hi) return null;
+  return {pat:pat.slice(lo,hi+1), lo, len:hi-lo+1};
+}
+function opportunities(L){
+  let o=0; for(const m of MSGS) if(m.length>=L) o+=m.length-L+1; return o;
+}
+function scan(W,minRep,excludeShared){
+  const buckets=new Map(); let slideOpp=0;
+  for(let r=0;r<N;r++){const m=MSGS[r];
+    for(let i=0;i+W<=m.length;i++){
+      slideOpp++;
+      const t=trimGapPat(gapPattern(m.substr(i,W)));
+      if(!t) continue;
+      // recompute on trimmed CT so the pattern is the isomorph of that span (not a sliced label string)
+      const start=i+t.lo, pat=gapPattern(m.substr(start,t.len));
+      if(pat[0]==='.'||pat[pat.length-1]==='.') continue; // shouldn't happen; belt-and-suspenders
+      if(!buckets.has(pat)) buckets.set(pat,[]);
+      buckets.get(pat).push([r,start]);
+    }
+  }
+  const rows=[];
+  for(const [pat,rawOcc] of buckets){
+    const [extra,nd]=extraEq(pat); if(nd<minRep) continue;
+    const len=pat.length;
+    // overlapping W-windows can yield the same trimmed start — dedupe
+    const occ=[]; const seenPos=new Set();
+    for(const [r,i] of rawOcc){
+      const k=r+','+i; if(seenPos.has(k)) continue; seenPos.add(k); occ.push([r,i]);
+    }
+    const seen=new Map();
+    for(const [r,i] of occ){const ct=MSGS[r].substr(i,len); if(!seen.has(ct)) seen.set(ct,[r,i]);}
+    const distinct=seen.size;
+    const nEff=excludeShared?distinct:occ.length;
+    if(nEff<2) continue;
+    const opp=opportunities(len);
+    const mu=opp*Math.pow(ALPHA,-extra);
+    rows.push({pat,occ,nAll:occ.length,nDistinct:distinct,nEff,nd,extra,score:poissonTailNeglog(mu,nEff),
+               shared:occ.length-distinct,len});
+  }
+  rows.sort((a,b)=> b.score-a.score || b.nEff-a.nEff);
+  return {rows,opp:slideOpp};
+}
+
+// ---- build single CT+PT grid ----
+function fillLabels(el){
+  for(let r=0;r<N;r++){const d=document.createElement('div');d.className='lrow';
+    d.innerHTML=`<span class="id">${label(r)}</span><span class="fam ${FAMCLASS[FAM[r]]}"></span><span class="len">${MSGS[r].length}</span>`;el.appendChild(d);}
+}
+function fillRuler(el){
+  el.style.width=(MAXLEN*CW)+'px';
+  for(let c=0;c<MAXLEN;c+=10){const t=document.createElement('div');t.className='tick';t.style.left=(c*CW)+'px';t.textContent=c;el.appendChild(t);}
+}
+fillLabels(document.getElementById('labels'));
+fillRuler(document.getElementById('ruler'));
+
+const grid=document.getElementById('grid');grid.style.width=(MAXLEN*CW)+'px';grid.style.height=(N*RH)+'px';
+const overlay=document.getElementById('overlay');overlay.setAttribute('width',MAXLEN*CW);overlay.setAttribute('height',N*RH);
+const scroll=document.getElementById('scroll');
+for(let r=0;r<N;r++){const bg=document.createElement('div');bg.className='rowbg famrow';
+  bg.style.top=(r*RH)+'px';bg.style.width=(MSGS[r].length*CW)+'px';bg.style.background=`var(${FAMVAR[FAM[r]]})`;grid.appendChild(bg);}
+const cells=[], ptBoard=MSGS.map(m=>Array(m.length).fill(''));
+for(let r=0;r<N;r++){cells.push([]);
+  for(let c=0;c<MSGS[r].length;c++){
+    const ch=MSGS[r][c];
+    const el=document.createElement('div');el.className='cell is-empty';
+    el.style.left=(c*CW)+'px';el.style.top=(r*RH)+'px';el.dataset.r=r;el.dataset.c=c;el.dataset.ch=ch;
+    el.innerHTML=`<span class="ct">${ch===' '?' ' : escapeHtml(ch)}</span><span class="ptg">${EMPTY_MARK}</span>`;
+    grid.appendChild(el);cells[r].push(el);
+  }
+}
+
+const colCount=[];for(let c=0;c<MAXLEN;c++){const m=new Map();for(let r=0;r<N;r++)if(c<MSGS[r].length){const ch=MSGS[r][c];m.set(ch,(m.get(ch)||0)+1);}colCount.push(m);}
+const agree=(c,ch)=>colCount[c].get(ch)||0;
+const gapPairs={2:[],4:[]};for(const g of [2,4])for(let r=0;r<N;r++){const s=MSGS[r];for(let i=0;i+g<s.length;i++)if(s[i]===s[i+g])gapPairs[g].push({r,i,j:i+g});}
+// gap-4: just the repeat endpoints. gap-2: special — CT X.X is a repeated-bigram slot (PT form ABAB on four cells).
+const gapCell=new Set();
+gapPairs[4].forEach(p=>{ gapCell.add(p.r+','+p.i); gapCell.add(p.r+','+p.j); });
+gapPairs[2].forEach(p=>{
+  for(let k=0;k<4 && p.i+k<MSGS[p.r].length;k++) gapCell.add(p.r+','+(p.i+k));
+});
+function gap2PairCells(r,c){
+  // Same plaintext letter on the two A slots (i,i+2) or the two B slots (i+1,i+3).
+  const out=[];
+  for(const p of gapPairs[2]){
+    if(p.r!==r || c<p.i || c>=p.i+4) continue;
+    const slot=(c-p.i)%2;
+    out.push([r,p.i+slot]);
+    if(p.i+slot+2<MSGS[r].length) out.push([r,p.i+slot+2]);
+  }
+  return out;
+}
+
+// Shared sections = shift-0 identical CT runs (≥2) between message pairs (same as the viewer).
+// Same column + same glyph run ⇒ same plaintext; union-find merges multi-message refrains.
+const SHARED_LINK=(()=>{
+  const parent=new Map();
+  const k=(r,c)=>r+','+c;
+  const find=x=>{ if(!parent.has(x)) parent.set(x,x); let p=parent.get(x); if(p!==x){p=find(p);parent.set(x,p);} return p; };
+  const uni=(a,b)=>{a=find(a);b=find(b); if(a!==b) parent.set(a,b);};
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+    const A=MSGS[i],B=MSGS[j],m=Math.min(A.length,B.length);
+    let p=0;
+    while(p<m){
+      if(A[p]!==B[p]){p++;continue;}
+      let q=p+1; while(q<m&&A[q]===B[q])q++;
+      if(q-p>=2) for(let t=p;t<q;t++) uni(k(i,t),k(j,t));
+      p=q;
+    }
+  }
+  const groups=new Map();
+  for(const id of parent.keys()){
+    const root=find(id);
+    if(!groups.has(root)) groups.set(root,[]);
+    const [r,c]=id.split(',').map(Number);
+    groups.get(root).push([r,c]);
+  }
+  const link=new Map();
+  for(const members of groups.values()){
+    if(members.length<2) continue;
+    for(const [r,c] of members) link.set(k(r,c),members);
+  }
+  return link;
+})();
+const SHARED_GROUPS=[...new Set([...SHARED_LINK.values()])];
+
+let MODE='work',W=30,MINREP=2,EXSHARED=true,SCANRES=scan(30,2,true),SELECTED=null,HOVER=null,PT=null,ptFocus=null,PIN=null,CELL_ISO=null,FAM_ISO=null;
+const FAMNAME=['α','β','γ'];
+
+document.getElementById('chips').innerHTML=[
+ `<span class="chip"><b>9</b> messages · <b>3</b> families</span>`,
+ `<span class="chip">canonical <span class="k">A.B.CB.AC</span> · <b>5</b> distinct · score ~16</span>`,
+ `<span class="chip">alphabet <b>83</b> · no adjacent doubles</span>`,
+ `<span class="chip" id="chipopp"></span>`,
+].join('');
+
+function colorPat(pat){let h='';for(const ch of pat){h+= ch==='.'?'<span class="dot">.</span>':`<span style="color:${letterHue(ch)}">${ch}</span>`;}return h;}
+function filterOcc(occ){
+  if(FAM_ISO==null) return occ;
+  return occ.filter(([r])=>FAM[r]===FAM_ISO);
+}
+function familyIsoRows(){
+  // Patterns with ≥2 occurrences inside the active family (within-family relations).
+  const out=[];
+  for(const row of SCANRES.rows){
+    const occ=filterOcc(row.occ);
+    if(occ.length<2) continue;
+    out.push({...row, occ, nFam:occ.length});
+  }
+  return out;
+}
+function listedIsoRows(){
+  return FAM_ISO==null ? SCANRES.rows : familyIsoRows();
+}
+function isomorphsAt(r,c){
+  const hits=[];
+  for(const row of listedIsoRows()){
+    const len=row.pat.length;
+    for(const [rr,i] of row.occ){
+      if(rr===r && c>=i && c<i+len){ hits.push({row,start:i,offset:c-i}); break; }
+    }
+  }
+  return hits;
+}
+function renderList(){
+  const {opp}=SCANRES;
+  const all=listedIsoRows();
+  const hits=CELL_ISO?isomorphsAt(CELL_ISO[0],CELL_ISO[1]):null;
+  const rows=hits?hits.map(h=>h.row):all;
+  document.getElementById('chipopp').innerHTML=`window ${W} · <b>${opp}</b> positions · <b>${SCANRES.rows.length}</b> patterns`+
+    (FAM_ISO!=null?` · <b>${all.length}</b> in ${FAMNAME[FAM_ISO]}`:'');
+  const cnt=document.getElementById('isocount');
+  if(CELL_ISO){
+    cnt.innerHTML=`${rows.length} at ${label(CELL_ISO[0])}:${CELL_ISO[1]} · <a href="#" id="isoclear" style="color:var(--violet)">all</a>`;
+  }else if(FAM_ISO!=null){
+    cnt.textContent=`${all.length} in ${FAMNAME[FAM_ISO]}`;
+  }else cnt.textContent=SCANRES.rows.length+' patterns';
+  const box=document.getElementById('isolist');
+  if(!rows.length){
+    box.innerHTML=CELL_ISO
+      ?`<div class="empty" style="padding:8px">No isomorphs cover ${label(CELL_ISO[0])}:${CELL_ISO[1]} at this filter.</div>`
+      :`<div class="empty" style="padding:8px">No isomorphs${FAM_ISO!=null?' in '+FAMNAME[FAM_ISO]:''} at this window / filter.</div>`;
+    return;
+  }
+  const startOf=hits?new Map(hits.map(h=>[h.row.pat,h])):null;
+  box.innerHTML=rows.slice(0,80).map((row)=>{
+    const idx=SCANRES.rows.findIndex(r=>r.pat===row.pat);
+    const fams=new Set(row.occ.map(o=>FAM[o[0]]));
+    const famtag=['α','β','γ'].filter((_,i)=>fams.has(i)).join('');
+    const sh=row.shared?` <span style="color:var(--dim)">−${row.shared}sh</span>`:'';
+    const hit=startOf&&startOf.get(row.pat);
+    const at=hit?` · @${hit.start}`:'';
+    const nShow=FAM_ISO!=null?row.occ.length:row.nEff;
+    return `<div class="iso" data-idx="${idx}" role="option" aria-selected="${SELECTED&&SELECTED.pat===row.pat}">
+      <span class="score">${row.score.toFixed(1)}</span><span class="pat">${colorPat(row.pat)}</span>
+      <span class="meta">${nShow}× · ${row.nd}r · ${famtag}${sh}${at}</span></div>`;
+  }).join('');
+}
+function clearIsoSelection(){
+  if(!SELECTED && FAM_ISO==null) return;
+  SELECTED=null;
+  renderList();
+  paint();
+  if(CELL_ISO) showCellIsomorphs(CELL_ISO[0],CELL_ISO[1]);
+  else if(FAM_ISO!=null) showFamilySummary();
+  else if(ptFocus) showCellIsomorphs(ptFocus[0],ptFocus[1]);
+  else document.getElementById('detail').innerHTML='<h3>Inspector</h3><div class="empty">Hover a cell for its window gap pattern. Under the isomorph lens, select a ranked pattern to inspect all hits.</div>';
+}
+
+document.getElementById('isolist').addEventListener('click',e=>{
+  const it=e.target.closest('.iso');
+  if(!it){ clearIsoSelection(); return; }
+  const base=SCANRES.rows[+it.dataset.idx];
+  if(!base) return;
+  const occ=filterOcc(base.occ);
+  const row={...base, occ: occ.length?occ:base.occ};
+  SELECTED=(SELECTED&&SELECTED.pat===row.pat)?null:row;
+  renderList(); paint();
+  if(SELECTED) showSelected();
+  else if(CELL_ISO) showCellIsomorphs(CELL_ISO[0],CELL_ISO[1]);
+  else if(FAM_ISO!=null) showFamilySummary();
+});
+document.getElementById('isocard').addEventListener('click',e=>{
+  if(!e.target.closest('#isoclear')) return;
+  e.preventDefault(); CELL_ISO=null; renderList();
+  if(SELECTED) showSelected();
+  else if(FAM_ISO!=null) showFamilySummary();
+  else if(ptFocus) showCellIsomorphs(ptFocus[0],ptFocus[1]);
+});
+document.getElementById('famseg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#famseg button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  FAM_ISO=b.dataset.fam===''?null:+b.dataset.fam;
+  SELECTED=null; CELL_ISO=null;
+  renderList(); paint();
+  if(FAM_ISO!=null) showFamilySummary();
+  else document.getElementById('detail').innerHTML='<h3>Inspector</h3><div class="empty">Hover a cell or pick a ranked isomorph.</div>';
+});
+function showFamilySummary(){
+  if(FAM_ISO==null) return;
+  const rows=familyIsoRows();
+  const members=NAMES.filter((_,i)=>FAM[i]===FAM_ISO).join(' · ');
+  document.getElementById('detail').innerHTML=`<h3>Family ${FAMNAME[FAM_ISO]}</h3>
+    <div class="kv"><span class="k">messages</span><span class="v">${members}</span></div>
+    <div class="kv"><span class="k">within-family isomorphs</span><span class="v">${rows.length}</span></div>
+    <p class="pthelp" style="margin-top:8px">All patterns with ≥2 hits inside ${FAMNAME[FAM_ISO]} are lit on the grid. Click one in the list to focus it.</p>
+    <div class="isolist" style="max-height:180px;margin-top:8px">${rows.slice(0,40).map(row=>{
+      const idx=SCANRES.rows.findIndex(r=>r.pat===row.pat);
+      return `<div class="iso" data-idx="${idx}"><span class="score">${row.score.toFixed(1)}</span><span class="pat">${colorPat(row.pat)}</span><span class="meta">${row.occ.length}×</span></div>`;
+    }).join('')}</div>`;
+}
+
+function jumpTo(r,c,opts){
+  scroll.scrollLeft=Math.max(0,c*CW-scroll.clientWidth*0.35);
+  const inspect=opts&&'inspect' in opts ? opts.inspect : !PIN;
+  setPtFocus(r,c,{inspect});
+}
+
+function showCellIsomorphs(r,c){
+  const hits=isomorphsAt(r,c);
+  const ch=MSGS[r][c];
+  const colMates=[];
+  for(let rr=0;rr<N;rr++) if(c<MSGS[rr].length&&MSGS[rr][c]===ch) colMates.push([rr,c]);
+  const shared=SHARED_LINK.get(r+','+c)||null;
+  const box=document.getElementById('detail');
+  let html=`<h3>Cell ${label(r)}:${c}</h3>
+    <div class="kv"><span class="k">CT glyph</span><span class="v">${escapeHtml(ch===' '?'␣':ch)}</span></div>`;
+
+  if(colMates.length>=2){
+    html+=`<div class="kv"><span class="k">shared column</span><span class="v">${colMates.length}/9 identical</span></div>
+      <div class="occtags" style="margin:6px 0 4px">${colMates.map(([rr,cc])=>`<span data-r="${rr}" data-c="${cc}">${label(rr)}:${cc}</span>`).join('')}</div>
+      <p class="pthelp" style="margin:0 0 8px">Same glyph in this aligned column — refrain / shared-column signal.</p>`;
+  }
+  if(shared&&shared.length>=2){
+    html+=`<div class="kv"><span class="k">shared section</span><span class="v">${shared.length} linked cells</span></div>
+      <div class="occtags" style="margin:6px 0 4px">${shared.map(([rr,cc])=>`<span data-r="${rr}" data-c="${cc}">${label(rr)}:${cc}${ptBoard[rr][cc]?`=${escapeHtml(ptBoard[rr][cc])}`:''}</span>`).join('')}</div>
+      <p class="pthelp" style="margin:0 0 8px">Identical CT run across messages — plaintext must match.</p>`;
+  }
+
+  html+=`<div class="kv"><span class="k">covering isomorphs</span><span class="v">${hits.length}</span></div>`;
+  if(!hits.length){
+    html+='<div class="empty" style="margin-top:8px">No ranked isomorphs cover this cell at the current window / filters.</div>';
+    if(c+W<=MSGS[r].length){
+      const pat=gapPattern(MSGS[r].substr(c,W));
+      html+=`<p class="pthelp" style="margin-top:8px">Window-${W} starting here: <span class="wpat" style="font-size:14px">${colorPat(pat)}</span></p>`;
+    }
+  }else{
+    html+=`<div class="isolist" style="max-height:200px;margin-top:8px">`+hits.map(({row,start,offset})=>{
+      const idx=SCANRES.rows.indexOf(row);
+      return `<div class="iso" data-idx="${idx}" role="option" aria-selected="${SELECTED&&SELECTED.pat===row.pat}">
+        <span class="score">${row.score.toFixed(1)}</span><span class="pat">${colorPat(row.pat)}</span>
+        <span class="meta">@${start} · +${offset} · ${row.nEff}×</span></div>`;
+    }).join('')+`</div>
+    <p class="pthelp" style="margin-top:8px">Click a pattern to light every occurrence on the grid.</p>`;
+  }
+  box.innerHTML=html;
+  markCellShares();
+}
+function markCellShares(){
+  for(let r=0;r<N;r++) for(let c=0;c<MSGS[r].length;c++) cells[r][c].classList.remove('is-share');
+  if(!CELL_ISO||PIN) return;
+  const [cr,cc]=CELL_ISO, ch=MSGS[cr][cc];
+  if(agree(cc,ch)>=2)
+    for(let rr=0;rr<N;rr++) if(cc<MSGS[rr].length&&MSGS[rr][cc]===ch) cells[rr][cc].classList.add('is-share');
+  const shared=SHARED_LINK.get(cr+','+cc);
+  if(shared) for(const [rr,c] of shared) cells[rr][c].classList.add('is-share');
+}
+function showSelected(){if(!SELECTED)return;
+  const r={...SELECTED, occ:filterOcc(SELECTED.occ)};
+  document.getElementById('detail').innerHTML=`<h3>Selected isomorph${FAM_ISO!=null?' · '+FAMNAME[FAM_ISO]:''}</h3>
+    <div class="wpat">${colorPat(r.pat)}</div>
+    <div class="kv"><span class="k">independent occ.</span><span class="v">${r.occ.length}× ${r.shared?`(+${r.shared} shared)`:''}</span></div>
+    <div class="kv"><span class="k">repeating symbol types</span><span class="v">${r.nd}</span></div>
+    <div class="kv"><span class="k">significance</span><span class="v">score ${r.score.toFixed(1)} · 10⁻${r.score.toFixed(0)}</span></div>
+    <div class="occtags">${r.occ.map(o=>`<span data-r="${o[0]}" data-c="${o[1]}">${label(o[0])}:${o[1]}</span>`).join('')}</div>
+    <p class="pthelp" style="margin-top:10px">Same gap pattern → candidate sites for one repeated plaintext word.</p>`;}
+
+document.getElementById('detail').addEventListener('click',e=>{
+  const iso=e.target.closest('.iso');
+  if(iso&&iso.dataset.idx!=null){
+    const base=SCANRES.rows[+iso.dataset.idx]; if(!base) return;
+    const occ=filterOcc(base.occ);
+    const row={...base, occ:occ.length?occ:base.occ};
+    SELECTED=(SELECTED&&SELECTED.pat===row.pat)?null:row;
+    renderList(); paint();
+    if(SELECTED) showSelected();
+    else if(CELL_ISO) showCellIsomorphs(CELL_ISO[0],CELL_ISO[1]);
+    else if(FAM_ISO!=null) showFamilySummary();
+    return;
+  }
+  const t=e.target.closest('.occtags span'); if(!t)return;
+  jumpTo(+t.dataset.r,+t.dataset.c);
+});
+
+// ---- PLAINTEXT GRID ----
+function setPtFocus(r,c,opts){
+  const inspect=!(opts&&opts.inspect===false);
+  if(ptFocus){const [or,oc]=ptFocus; cells[or][oc].classList.remove('is-focus');}
+  if(r==null||c==null||c>=MSGS[r].length){
+    ptFocus=null; CELL_ISO=null; renderList(); markCellShares(); return;
+  }
+  ptFocus=[r,c]; cells[r][c].classList.add('is-focus'); grid.focus({preventScroll:true});
+  if(!PIN){
+    CELL_ISO=[r,c];
+    renderList();
+    if(inspect) showCellIsomorphs(r,c);
+  }
+}
+function paintPtCell(r,c){
+  const el=cells[r][c], ch=ptBoard[r][c], pt=el.querySelector('.ptg');
+  el.classList.remove('is-empty','is-space','is-ok','is-bad','is-single','is-iso','is-iso-ghost','is-focus','is-pin','is-share');
+  el.style.background=''; el.style.opacity=''; pt.style.color='';
+  if(!ch){pt.textContent=EMPTY_MARK;el.classList.add('is-empty');}
+  else if(ch===' '){pt.textContent=SPACE_MARK;el.classList.add('is-space');}
+  else{pt.textContent=ch;}
+  if(ptFocus&&ptFocus[0]===r&&ptFocus[1]===c) el.classList.add('is-focus');
+}
+function foldPt(ch){
+  return document.getElementById('tCase').checked ? ch : (ch && ch!==' ' ? ch.toLocaleLowerCase() : ch);
+}
+function updatePtAlpha(){
+  const s=new Set();
+  for(const row of ptBoard) for(const ch of row){
+    if(!ch || ch===' ') continue;
+    s.add(foldPt(ch));
+  }
+  document.getElementById('ptalpha').innerHTML=`PT alphabet · <b>${s.size}</b>`;
+}
+function selectedIsoMap(){
+  if(SELECTED){
+    const selMap=new Map(), len=SELECTED.pat.length;
+    const occ=filterOcc(SELECTED.occ);
+    for(const [r,i] of occ){
+      for(let k=0;k<len;k++) if(SELECTED.pat[k]!=='.') selMap.set(r+','+(i+k),SELECTED.pat[k]);
+    }
+    return selMap;
+  }
+  if(FAM_ISO!=null){
+    // All within-family relations at once (highest-score pattern wins a cell on overlap).
+    const selMap=new Map();
+    for(const row of familyIsoRows()){
+      const len=row.pat.length;
+      for(const [r,i] of row.occ){
+        for(let k=0;k<len;k++){
+          if(row.pat[k]==='.') continue;
+          const key=r+','+(i+k);
+          if(!selMap.has(key)) selMap.set(key,row.pat[k]);
+        }
+      }
+    }
+    return selMap;
+  }
+  return null;
+}
+function paintPtIso(selMap){
+  if(!selMap){
+    for(let r=0;r<N;r++)for(let c=0;c<MSGS[r].length;c++){
+      const el=cells[r][c];
+      el.classList.remove('is-iso','is-iso-ghost');
+      el.style.opacity='';
+      if(!el.classList.contains('is-ok')&&!el.classList.contains('is-bad')&&!el.classList.contains('is-single'))
+        el.style.background='';
+    }
+    return;
+  }
+  for(let r=0;r<N;r++)for(let c=0;c<MSGS[r].length;c++){
+    const el=cells[r][c], key=r+','+c, L=selMap.get(key), pt=el.querySelector('.ptg');
+    el.classList.remove('is-iso','is-iso-ghost');
+    if(!L){
+      if(isInSelected(r,c)) el.style.opacity=(!ptBoard[r][c])?'.35':'.65';
+      else el.style.opacity='.28';
+      continue;
+    }
+    const hue=letterHue(L);
+    el.classList.add('is-iso');
+    el.style.opacity='1';
+    if(!ptBoard[r][c]){
+      pt.textContent=L; el.classList.add('is-iso-ghost'); el.classList.remove('is-empty');
+      el.style.background=hue;
+      pt.style.color='#0c0e13';
+    } else if(!el.classList.contains('is-ok')&&!el.classList.contains('is-bad')&&!el.classList.contains('is-single')){
+      el.style.background=`color-mix(in srgb, ${hue} 35%, #0c0e13)`;
+      pt.style.color='';
+    }
+  }
+}
+function coveringIsomorph(r,c){
+  // Prefer the selected pattern; else highest-ranked scan hit covering this cell.
+  const cands=[];
+  if(SELECTED) cands.push(SELECTED);
+  for(const row of SCANRES.rows){ if(row!==SELECTED) cands.push(row); }
+  for(const row of cands){
+    const len=row.pat.length;
+    for(const [rr,i] of row.occ){
+      if(rr===r && c>=i && c<i+len) return {occ:row.occ, offset:c-i, len, pat:row.pat};
+    }
+  }
+  return null;
+}
+function rebuildIsoCells(){
+  const s=new Set();
+  // ranked isomorphs
+  for(const row of SCANRES.rows){
+    const len=row.pat.length;
+    for(const [r,i] of row.occ) for(let k=0;k<len;k++) s.add(r+','+(i+k));
+  }
+  // shared columns: same glyph in 2+ messages at that column
+  for(let c=0;c<MAXLEN;c++){
+    for(let r=0;r<N;r++){
+      if(c>=MSGS[r].length) continue;
+      if(agree(c,MSGS[r][c])>=2) s.add(r+','+c);
+    }
+  }
+  // gap-2 repeated-bigram slots + gap-4 endpoints
+  for(const id of gapCell) s.add(id);
+  ISO_CELLS=s;
+}
+let ISO_CELLS=new Set();
+function isoOnlyOn(){ return document.getElementById('tIsoOnly').checked; }
+function canEditPt(r,c){ return !isoOnlyOn() || ISO_CELLS.has(r+','+c); }
+function relatedPositions(r,c){
+  // Isomorph same-offset + shared-section same-column + gap-2 repeated-bigram slots.
+  const seen=new Set(), out=[];
+  const add=(rr,cc)=>{
+    if(cc<0||cc>=MSGS[rr].length) return;
+    const id=rr+','+cc; if(seen.has(id)) return;
+    seen.add(id); out.push([rr,cc]);
+  };
+  add(r,c);
+  const cov=coveringIsomorph(r,c);
+  if(cov) for(const [rr,i] of cov.occ) add(rr,i+cov.offset);
+  for(const [rr,cc] of [...out]){
+    const sh=SHARED_LINK.get(rr+','+cc);
+    if(sh) for(const [a,b] of sh) add(a,b);
+  }
+  for(const [rr,cc] of gap2PairCells(r,c)) add(rr,cc);
+  return out;
+}
+function setPtChar(r,c,ch,propagate=true,force=false){
+  const targets=propagate?relatedPositions(r,c):[[r,c]];
+  let wrote=false;
+  for(const [rr,cc] of targets){
+    if(!force && !canEditPt(rr,cc)) continue;
+    ptBoard[rr][cc]=ch; paintPtCell(rr,cc); wrote=true;
+  }
+  if(wrote){ savePtBoard(); updatePtAlpha(); }
+  return wrote;
+}
+function clearPtBoard(){
+  for(let r=0;r<N;r++)for(let c=0;c<MSGS[r].length;c++){ptBoard[r][c]='';paintPtCell(r,c);}
+  savePtBoard(); updatePtAlpha();
+}
+function placeWord(r,start,word,propagate=false){
+  for(let k=0;k<word.length;k++){
+    if(start+k>=MSGS[r].length) break;
+    setPtChar(r,start+k,word[k],propagate,true); // programmatic fills bypass iso-only
+  }
+}
+function loadDemo(){
+  clearPtBoard();
+  // α shared header (E1·W1·E2) — one write fills the refrain copies
+  placeWord(0,1,'TheEyes',true);
+  placeWord(0,9,' ',true);
+  placeWord(0,10,'open',true);
+  // compatible isomorph pair (both A.B.CB.AC)
+  placeWord(0,40,'CANONICAL');
+  placeWord(0,68,'CANONICAL');
+  // short phrase further along E1
+  placeWord(0,80,'still');
+  placeWord(0,86,' ');
+  placeWord(0,87,'here');
+  // contradiction: same claim, different gap patterns
+  placeWord(1,54,'GUESSY');
+  placeWord(3,19,'GUESSY');
+  // β/γ shared stem at col 1 (W2…E5)
+  placeWord(3,1,'West',true);
+  // single untested word
+  placeWord(2,100,'alone');
+  // γ shared stretch sample
+  placeWord(6,10,'gate',true);
+  runPT();
+}
+const PT_STORE='eye-solver.plaintext.v1';
+let PT_NOSAVE=false;
+function savePtBoard(){
+  if(PT_NOSAVE) return;
+  try{
+    localStorage.setItem(PT_STORE, JSON.stringify(ptBoard.map(row=>row.map(ch=>ch||'.').join(''))));
+  }catch(_){}
+}
+function loadPtBoard(){
+  try{
+    const raw=localStorage.getItem(PT_STORE); if(!raw) return false;
+    const rows=JSON.parse(raw);
+    if(!Array.isArray(rows) || rows.length!==N) return false;
+    for(let r=0;r<N;r++){
+      if(typeof rows[r]!=='string') return false;
+      for(let c=0;c<MSGS[r].length;c++){
+        const ch=rows[r][c];
+        ptBoard[r][c]=(ch && ch!=='.') ? ch : '';
+        paintPtCell(r,c);
+      }
+    }
+    updatePtAlpha();
+    return true;
+  }catch(_){ return false; }
+}
+function parseFromBoard(){
+  // Kept for filled-row snapshots / overlay links; validation does not trust word tokens.
+  const tokens=[],rows={},errors=[];
+  for(let r=0;r<N;r++){
+    let content='', last=-1;
+    for(let c=0;c<MSGS[r].length;c++){
+      const ch=ptBoard[r][c];
+      if(ch){ while(content.length<c) content+='.'; content+=ch; last=c; }
+    }
+    if(last<0)continue;
+    rows[r]=content;
+    let i=0;
+    while(i<content.length){
+      if(content[i]===' '||content[i]==='.'){i++;continue;}
+      let j=i; while(j<content.length&&content[j]!==' '&&content[j]!=='.')j++;
+      const text2=content.slice(i,j),start=i,len=j-i;
+      const key=document.getElementById('tCase').checked ? text2 : text2.toLocaleLowerCase();
+      tokens.push({row:r,start,len,text:key,raw:text2,pat:ctGap(r,start,len)});
+      i=j;
+    }
+  }
+  return {tokens,rows,errors};
+}
+// Exhaustive sliding-window validation — every fully-filled span, not word tokens.
+// Fatal: (1) same PT ⇒ same CT gap pattern  (2) identical CT ⇒ same PT  (3) shared-section letters.
+function eachFilledWindow(fn){
+  for(let r=0;r<N;r++){
+    const mlen=MSGS[r].length;
+    for(let s=0;s<mlen;s++){
+      if(!ptBoard[r][s]) continue;
+      let raw='';
+      for(let L=1;s+L<=mlen;L++){
+        const ch=ptBoard[r][s+L-1];
+        if(!ch) break;
+        raw+=ch;
+        if(L>=2) fn(r,s,L,raw);
+      }
+    }
+  }
+}
+function markCells(cellStatus, t, st){
+  for(let k=0;k<t.len;k++){
+    const id=t.row+','+(t.start+k);
+    if(st==='bad') cellStatus.set(id,'bad');
+    else if(cellStatus.get(id)!=='bad') cellStatus.set(id,st);
+  }
+}
+function runPT(){
+  PIN=null;
+  const parsed=parseFromBoard();
+  PT=parsed;
+  const matchCase=document.getElementById('tCase').checked;
+  const fold=s=>matchCase?s:s.toLocaleLowerCase();
+  const cellStatus=new Map();
+  let windowCount=0;
+
+  // ---- (1)+(2) one pass over every fully-filled span ----
+  const byPt=new Map(), byCt=new Map();
+  eachFilledWindow((r,s,L,raw)=>{
+    windowCount++;
+    const key=fold(raw);
+    const pat=ctGap(r,s,L);
+    const site={row:r,start:s,len:L,raw,text:key,pat};
+    if(!byPt.has(key)) byPt.set(key,[]);
+    byPt.get(key).push(site);
+    const ct=MSGS[r].substr(s,L);
+    if(!byCt.has(ct)) byCt.set(ct,[]);
+    byCt.get(ct).push(site);
+  });
+  const contradictions=[], consistent=[];
+  for(const [,sites] of byPt){
+    if(sites.length<2) continue;
+    const pats=new Set(sites.map(x=>x.pat));
+    if(pats.size===1){
+      consistent.push({word:sites[0].raw,text:sites[0].text,ts:sites,pats:[sites[0].pat]});
+      for(const t of sites) markCells(cellStatus,t,'ok');
+    }else{
+      contradictions.push({word:sites[0].raw,text:sites[0].text,ts:sites,pats:[...pats]});
+      for(const t of sites) markCells(cellStatus,t,'bad');
+    }
+  }
+  contradictions.sort((a,b)=>b.ts[0].len-a.ts[0].len || b.ts.length-a.ts.length);
+  consistent.sort((a,b)=>b.ts[0].len-a.ts[0].len || b.ts.length-a.ts.length);
+
+  const ctBad=[];
+  for(const [,sites] of byCt){
+    if(sites.length<2) continue;
+    const pts=new Set(sites.map(x=>x.text));
+    if(pts.size<=1) continue;
+    ctBad.push({ct:MSGS[sites[0].row].substr(sites[0].start,sites[0].len),ts:sites,letters:[...new Set(sites.map(x=>x.raw))]});
+    for(const t of sites) markCells(cellStatus,t,'bad');
+  }
+  ctBad.sort((a,b)=>b.ts[0].len-a.ts[0].len);
+
+  // ---- (3) shared-section column links (shift-0 identical runs) ----
+  const sharedBad=[];
+  for(const members of SHARED_GROUPS){
+    const filled=members.filter(([r,c])=>ptBoard[r][c]);
+    if(filled.length<2) continue;
+    const letters=new Set(filled.map(([r,c])=>fold(ptBoard[r][c])));
+    if(letters.size>1){
+      sharedBad.push({cells:filled, letters:[...new Set(filled.map(([r,c])=>ptBoard[r][c]))]});
+      for(const [r,c] of filled){
+        const id=r+','+c;
+        cellStatus.set(id,'bad');
+      }
+    }
+  }
+
+  // ---- amber: same gap pattern, different PT (not fatal; coincidence possible) ----
+  const byPat=new Map();
+  eachFilledWindow((r,s,L,raw)=>{
+    if(L<4) return;
+    const pat=ctGap(r,s,L);
+    const [,nd]=extraEq(pat); if(nd<2) return;
+    const key=L+'|'+pat;
+    if(!byPat.has(key)) byPat.set(key,new Map());
+    const m=byPat.get(key);
+    const t=fold(raw);
+    if(!m.has(t)) m.set(t,{row:r,start:s,len:L,raw,text:t,pat});
+  });
+  const hints=[];
+  for(const [key,words] of byPat){
+    if(words.size<2) continue;
+    const pat=key.slice(key.indexOf('|')+1);
+    hints.push({pat,len:+key.split('|')[0],words:[...words.keys()],ts:[...words.values()]});
+  }
+  hints.sort((a,b)=>b.len-a.len);
+
+  // report lists: keep fatal complete but cap display noise for ✓ lines
+  const consistentShow=consistent.filter(c=>c.ts[0].len>=4 || extraEq(c.ts[0].pat)[1]>=2);
+
+  PT.result={
+    contradictions, consistent:consistentShow, consistentAll:consistent,
+    ctBad, sharedBad, hints, errors:parsed.errors,
+    cellStatus, windowCount,
+    nContra:contradictions.length, nCtBad:ctBad.length, nShared:sharedBad.length,
+    nOk:consistent.length,
+  };
+  // mirror status onto tokens for any leftover consumers
+  for(const t of parsed.tokens){
+    let st='single';
+    for(let c=t.start;c<t.start+t.len;c++){
+      const cs=cellStatus.get(t.row+','+c);
+      if(cs==='bad'){st='bad';break;}
+      if(cs==='ok') st='ok';
+    }
+    t.status=t.len<2?'short':st;
+  }
+  renderPTVerdict(); paint();
+}
+function renderPTVerdict(){
+  const R=PT.result, v=document.getElementById('ptverdict'), d=document.getElementById('ptdetail');
+  let cls='none',msg='';
+  const nFail=R.nContra+R.nCtBad+R.nShared;
+  const filled=PT.tokens.length>0 || R.windowCount>0;
+  if(R.errors.length && !filled){cls='none';msg=R.errors.length+' input issue(s) — nothing checked yet.';}
+  else if(nFail){
+    cls='fail';
+    const parts=[];
+    if(R.nContra) parts.push(`${R.nContra} same-PT shape mismatch${R.nContra>1?'es':''}`);
+    if(R.nCtBad) parts.push(`${R.nCtBad} identical-CT plaintext clash${R.nCtBad>1?'es':''}`);
+    if(R.nShared) parts.push(`${R.nShared} shared-section conflict${R.nShared>1?'s':''}`);
+    msg=`Impossible: ${parts.join(' · ')} · checked ${R.windowCount} filled windows.`;
+  }
+  else if(filled){
+    cls='pass';
+    msg=`Compatible across ${R.windowCount} filled windows`+
+      (R.nOk?` · ${R.nOk} repeated PT string${R.nOk>1?'s':''} match`:'')+
+      `. No isomorphism violations.`;
+  }
+  else {cls='none';msg='No plaintext checked yet.';}
+  v.className='verdict '+cls; v.textContent=msg;
+  let items='';
+  for(let i=0;i<(R.sharedBad||[]).length;i++){
+    const s=R.sharedBad[i];
+    const where=s.cells.map(([r,c])=>`${label(r)}:${c}=${ptBoard[r][c]}`).join(', ');
+    items+=`<li class="is-jump" data-kind="shared" data-i="${i}"><span class="tagbad">✗</span> <b>shared section</b> — identical CT given different plaintext (${s.letters.map(escapeHtml).join(' vs ')}) at ${where}</li>`;
+  }
+  for(let i=0;i<(R.ctBad||[]).length;i++){
+    const c=R.ctBad[i];
+    const where=c.ts.map(t=>`${label(t.row)}:${t.start}=${escapeHtml(t.raw)}`).join(', ');
+    items+=`<li class="is-jump" data-kind="ctbad" data-i="${i}"><span class="tagbad">✗</span> <b>identical CT</b> — same ciphertext span, different plaintext (${c.letters.map(escapeHtml).join(' vs ')}) at ${where}</li>`;
+  }
+  const contraShow=R.contradictions.slice(0,60);
+  for(let i=0;i<contraShow.length;i++){
+    const c=contraShow[i];
+    const sites=[...new Map(c.ts.map(t=>[t.row+':'+t.start,t])).values()];
+    items+=`<li class="is-jump" data-kind="contra" data-i="${i}"><span class="tagbad">✗</span> <b>${escapeHtml(c.word)}</b> <span style="color:var(--dim)">len ${c.ts[0].len}</span> — ${c.pats.map(p=>`<code>${colorPat(p)}</code>`).join(' vs ')} at ${sites.map(t=>label(t.row)+':'+t.start).join(', ')}</li>`;
+  }
+  if(R.contradictions.length>contraShow.length)
+    items+=`<li><span class="tagamber">…</span> ${R.contradictions.length-contraShow.length} more shape mismatches omitted</li>`;
+  const okShow=R.consistent.slice(0,25);
+  for(let i=0;i<okShow.length;i++){
+    const c=okShow[i];
+    const sites=[...new Map(c.ts.map(t=>[t.row+':'+t.start,t])).values()];
+    items+=`<li class="is-jump" data-kind="ok" data-i="${i}"><span class="tagok">✓</span> <b>${escapeHtml(c.word)}</b> — ${colorPat(c.ts[0].pat)} at ${sites.map(t=>label(t.row)+':'+t.start).join(', ')}</li>`;
+  }
+  for(let i=0;i<Math.min(R.hints.length,20);i++){
+    const h=R.hints[i];
+    items+=`<li class="is-jump" data-kind="hint" data-i="${i}"><span class="tagamber">△</span> ${colorPat(h.pat)} carries different plaintext (${h.words.map(escapeHtml).join(', ')}) — possible coincidence, not a proof.</li>`;
+  }
+  for(const e of R.errors) items+=`<li><span class="tagamber">!</span> ${escapeHtml(e)}</li>`;
+  d.innerHTML=items||'';
+}
+function tokenCells(ts){
+  const out=[];
+  for(const t of ts) for(let k=0;k<t.len;k++) out.push([t.row,t.start+k]);
+  return out;
+}
+function showInvalidation(kind,i){
+  if(!PT||!PT.result) return;
+  const R=PT.result;
+  let cells=[], title='', body='';
+  if(kind==='shared'){
+    const s=R.sharedBad[i]; if(!s) return;
+    cells=s.cells.slice();
+    title='Shared-section conflict';
+    body=`<div class="wpat" style="font-size:14px;letter-spacing:1px">${s.letters.map(escapeHtml).join(' ≠ ')}</div>
+      <p class="pthelp" style="margin:6px 0 0">Same CT run, different plaintext. Impossible under GAK.</p>
+      <div class="occtags">${s.cells.map(([r,c])=>`<span data-r="${r}" data-c="${c}">${label(r)}:${c}=${escapeHtml(ptBoard[r][c])}</span>`).join('')}</div>`;
+  }else if(kind==='ctbad'){
+    const c=R.ctBad[i]; if(!c) return;
+    cells=tokenCells(c.ts);
+    title='Identical ciphertext clash';
+    body=`<div class="kv"><span class="k">plaintexts</span><span class="v">${c.letters.map(escapeHtml).join(' ≠ ')}</span></div>
+      <p class="pthelp" style="margin:6px 0 0">Byte-identical CT spans must carry identical plaintext.</p>
+      <div class="occtags">${c.ts.map(t=>`<span data-r="${t.row}" data-c="${t.start}">${label(t.row)}:${t.start} · ${escapeHtml(t.raw)}</span>`).join('')}</div>`;
+  }else if(kind==='contra'){
+    const c=R.contradictions[i]; if(!c) return;
+    cells=tokenCells(c.ts);
+    title='Shape mismatch';
+    body=`<div class="kv"><span class="k">plaintext</span><span class="v">${escapeHtml(c.word)}</span></div>
+      <div class="wpat">${c.pats.map(p=>colorPat(p)).join(' <span style="color:var(--dim)">vs</span> ')}</div>
+      <p class="pthelp" style="margin:6px 0 0">Same plaintext on unequal gap patterns — impossible under perfect isomorphism.</p>
+      <div class="occtags">${c.ts.map(t=>`<span data-r="${t.row}" data-c="${t.start}">${label(t.row)}:${t.start} · ${colorPat(t.pat)}</span>`).join('')}</div>`;
+  }else if(kind==='ok'){
+    const c=R.consistent[i]; if(!c) return;
+    cells=tokenCells(c.ts);
+    title='Compatible repeat';
+    body=`<div class="kv"><span class="k">plaintext</span><span class="v">${escapeHtml(c.word)}</span></div>
+      <div class="wpat">${colorPat(c.ts[0].pat)}</div>
+      <div class="occtags">${c.ts.map(t=>`<span data-r="${t.row}" data-c="${t.start}">${label(t.row)}:${t.start}</span>`).join('')}</div>`;
+  }else if(kind==='hint'){
+    const h=R.hints[i]; if(!h) return;
+    cells=tokenCells(h.ts);
+    title='Same shape, different plaintext';
+    body=`<div class="wpat">${colorPat(h.pat)}</div>
+      <p class="pthelp" style="margin:6px 0 0">Not fatal — different words can collide on a gap pattern. Words: ${h.words.map(escapeHtml).join(', ')}</p>
+      <div class="occtags">${h.ts.map(t=>`<span data-r="${t.row}" data-c="${t.start}">${label(t.row)}:${t.start} · ${escapeHtml(t.raw)}</span>`).join('')}</div>`;
+  }else return;
+  if(!cells.length) return;
+  PIN=new Set(cells.map(([r,c])=>r+','+c));
+  document.querySelectorAll('#ptdetail li[aria-current]').forEach(el=>el.removeAttribute('aria-current'));
+  const li=document.querySelector(`#ptdetail li[data-kind="${kind}"][data-i="${i}"]`);
+  if(li) li.setAttribute('aria-current','true');
+  document.getElementById('detail').innerHTML=`<h3>${title}</h3>${body}`;
+  jumpTo(cells[0][0],cells[0][1]);
+  paint();
+}
+document.getElementById('ptdetail').addEventListener('click',e=>{
+  const li=e.target.closest('li.is-jump'); if(!li) return;
+  showInvalidation(li.dataset.kind,+li.dataset.i);
+});
+function schedulePT(){ clearTimeout(schedulePT._t); schedulePT._t=setTimeout(runPT,120); }
+
+grid.addEventListener('mousedown',e=>{
+  const el=e.target.closest('.cell'); if(!el)return;
+  PIN=null;
+  document.querySelectorAll('#ptdetail li[aria-current]').forEach(x=>x.removeAttribute('aria-current'));
+  const r=+el.dataset.r, c=+el.dataset.c;
+  if(SELECTED && !isInSelected(r,c)) clearIsoSelection();
+  setPtFocus(r,c);
+  e.preventDefault();
+});
+grid.addEventListener('keydown',e=>{
+  if(!ptFocus) return;
+  let [r,c]=ptFocus;
+  const go=(nr,nc,dr=0,dc=0)=>{
+    if(nr<0||nr>=N)return;
+    if(nc<0)nc=0; if(nc>=MSGS[nr].length)nc=MSGS[nr].length-1;
+    if(isoOnlyOn()){
+      let guard=0;
+      while(!canEditPt(nr,nc) && guard++<MAXLEN*N){
+        if(dc){
+          nc+=dc;
+          if(nc<0){nr--; nc=nr>=0?MSGS[nr].length-1:0;}
+          else if(nc>=MSGS[nr].length){nr++; nc=0;}
+        }else if(dr){
+          nr+=dr;
+        }else break;
+        if(nr<0||nr>=N) return;
+        if(nc<0)nc=0; if(nc>=MSGS[nr].length)nc=MSGS[nr].length-1;
+      }
+      if(!canEditPt(nr,nc)) return;
+    }
+    setPtFocus(nr,nc);
+    scroll.scrollLeft=Math.max(0,nc*CW-scroll.clientWidth*0.35);
+  };
+  if(e.key==='ArrowLeft'){e.preventDefault();go(r,c-1,0,-1);return;}
+  if(e.key==='ArrowRight'){e.preventDefault();go(r,c+1,0,1);return;}
+  if(e.key==='ArrowUp'){e.preventDefault();go(r-1,c,-1,0);return;}
+  if(e.key==='ArrowDown'){e.preventDefault();go(r+1,c,1,0);return;}
+  if(e.key==='Tab'){e.preventDefault();setPtChar(r,c,'');go(r,c+(e.shiftKey?-1:1),0,e.shiftKey?-1:1);schedulePT();return;}
+  if(e.key==='Backspace'){e.preventDefault();setPtChar(r,c,'');go(r,c-1,0,-1);schedulePT();return;}
+  if(e.key==='Delete'){e.preventDefault();setPtChar(r,c,'');schedulePT();return;}
+  if(e.key==='Escape'){
+    e.preventDefault();
+    if(SELECTED) clearIsoSelection();
+    else setPtFocus(null,null);
+    return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key===' '){
+    e.preventDefault();
+    if(setPtChar(r,c,' ')) go(r,c+1,0,1);
+    schedulePT(); return;
+  }
+  if(e.key==='Dead'||e.key==='Process') return;
+  if(/^(Shift|Control|Alt|Meta|CapsLock|Enter|Home|End|PageUp|PageDown|F\d+)$/.test(e.key)) return;
+  if(e.key.startsWith('Arrow')) return;
+  if(e.key.length>=1){
+    e.preventDefault();
+    if(setPtChar(r,c,e.key)) go(r,c+1,0,1);
+    schedulePT();
+  }
+});
+
+document.getElementById('ptrun').addEventListener('click',runPT);
+document.getElementById('ptclear').addEventListener('click',()=>{
+  clearPtBoard(); PT=null; PIN=null; setPtFocus(null,null);
+  document.getElementById('ptverdict').className='verdict none';
+  document.getElementById('ptverdict').textContent='No plaintext checked yet.';
+  document.getElementById('ptdetail').innerHTML=''; paint();
+});
+
+// ---- paint ----
+const HINTS={
+ work:'Plaintext — CT above, guess below. Strict mode locks typing to isomorphs, shared columns (2+ agree), and gap sites.',
+ iso:'Isomorphs — pick a pattern, or choose family α/β/γ to light every within-family relation at once.',
+ cols:'Shared columns — brightness = how many messages carry that exact glyph in that aligned column (refrains / shared sections).',
+ gaps:'Gaps — gap-2 (rose, β-only) is a repeated-bigram slot (PT ABAB on four cells). Gap-4 (blue) marks same-glyph distance-4 ends.',
+ raw:'Raw ciphertext — CT is the foreground; plaintext stays faint underneath. Family tint only.'
+};
+function paint(){
+  document.querySelectorAll('.famrow').forEach(bg=>bg.style.display=document.getElementById('tFam').checked?'block':'none');
+  grid.classList.toggle('lens-raw', MODE==='raw');
+  grid.classList.toggle('lens-cols', MODE==='cols');
+  grid.classList.toggle('iso-only', isoOnlyOn());
+  const selMap=(MODE==='raw'||MODE==='cols')?null:selectedIsoMap();
+  const lock=isoOnlyOn();
+  for(let r=0;r<N;r++)for(let c=0;c<MSGS[r].length;c++){
+    paintPtCell(r,c);
+    const el=cells[r][c], ch=el.dataset.ch, ct=el.querySelector('.ct');
+    el.classList.toggle('is-iso-edit', !lock || ISO_CELLS.has(r+','+c));
+    let bg='', ctColor='var(--dim)', ctOp=.9, op=1;
+
+    if(MODE==='iso'){
+      if(SELECTED || FAM_ISO!=null){
+        if(selMap&&selMap.has(r+','+c)){bg=letterHue(selMap.get(r+','+c));ctColor='#0c0e13';ctOp=1;}
+        else if(SELECTED&&isInSelected(r,c)){ctColor='var(--mut)';}
+        else{op=.22;ctColor='var(--dim)';}
+      }else{op=.55;ctColor='var(--mut)';}
+      if(FAM_ISO!=null && FAM[r]!==FAM_ISO) op*=.25;
+    }
+    else if(MODE==='cols'){const a=agree(c,ch);
+      if(a>=9){bg='var(--teal)';ctColor='#041512';ctOp=1;}
+      else if(a>=5){bg=`color-mix(in srgb,var(--teal) 82%,#0c0e13)`;ctColor='#041512';ctOp=1;}
+      else if(a>=3){bg=`color-mix(in srgb,var(--teal) 58%,#0c0e13)`;ctColor='var(--ink)';ctOp=1;}
+      else if(a>=2){bg=`color-mix(in srgb,var(--teal) 38%,#0c0e13)`;ctColor='var(--ink)';ctOp=1;}
+      else{op=.18;ctColor='var(--dim)';ctOp=.45;}}
+    else if(MODE==='gaps'){const on=gapCell.has(r+','+c);op=on?1:.28;if(!on)ctColor='var(--dim)';}
+    else if(MODE==='raw'){ctColor='var(--ink)';ctOp=1;}
+
+    if(MODE!=='iso' && MODE!=='raw' && MODE!=='cols' && selMap && selMap.has(r+','+c)){bg=letterHue(selMap.get(r+','+c));ctColor='#0c0e13';ctOp=1;op=1;}
+    else if(MODE!=='iso' && MODE!=='raw' && MODE!=='cols' && SELECTED && isInSelected(r,c)){op=.7;ctColor='var(--mut)';}
+    if(FAM_ISO!=null && MODE!=='iso' && FAM[r]!==FAM_ISO) op=Math.min(op,.3);
+
+    el.style.background=bg; el.style.opacity=op;
+    ct.style.color=ctColor; ct.style.opacity=ctOp;
+
+    if(PT&&ptBoard[r][c]){
+      const st=(PT.result&&PT.result.cellStatus&&PT.result.cellStatus.get(r+','+c))||'single';
+      if(st==='ok'){ el.classList.add('is-ok'); el.style.background=''; }
+      else if(st==='bad'){ el.classList.add('is-bad'); el.style.background=''; }
+      else{ el.classList.add('is-single'); if(MODE==='work'||MODE==='raw') el.style.background=''; }
+    }
+  }
+  paintPtIso(selMap);
+  if(PT&&PT.result&&PT.result.sharedBad){
+    for(const s of PT.result.sharedBad)
+      for(const [r,c] of s.cells){ cells[r][c].classList.add('is-bad'); cells[r][c].style.background=''; }
+  }
+  if(PIN){
+    for(const id of PIN){
+      const [r,c]=id.split(',').map(Number);
+      if(cells[r]&&cells[r][c]) cells[r][c].classList.add('is-pin');
+    }
+  }
+  markCellShares();
+  drawOverlay();
+  document.getElementById('hint').textContent=HINTS[MODE];
+  drawLegend();
+}
+function isInSelected(r,c){
+  if(!SELECTED)return false;
+  const len=SELECTED.pat.length;
+  for(const [rr,i] of filterOcc(SELECTED.occ))if(rr===r&&c>=i&&c<i+len)return true;
+  return false;
+}
+
+const cx=c=>c*CW+CW/2,cy=r=>r*RH+RH/2;
+function drawIsoRow(svg,row,linkCross){
+  const len=row.pat.length, occ=filterOcc(row.occ);
+  for(const [r,i] of occ){
+    rectOn(svg,i*CW+1,r*RH+1,len*CW-2,RH-2);
+    const pat=row.pat,posByL={};
+    for(let k=0;k<pat.length;k++){const L=pat[k];if(L==='.')continue;(posByL[L]=posByL[L]||[]).push(i+k);}
+    const y=cy(r)+RH/2-4;
+    for(const L in posByL){const ps=posByL[L],col=letterHue(L);
+      for(let a=0;a+1<ps.length;a++){const x1=cx(ps[a]),x2=cx(ps[a+1]),mx=(x1+x2)/2;arcOn(svg,x1,y,x2,y,mx,y+9,col,1.5,.95);}}
+  }
+  if(linkCross && occ.length>=2){
+    for(let a=0;a+1<occ.length;a++){
+      const [r1,i1]=occ[a],[r2,i2]=occ[a+1];
+      const x1=cx(i1+len/2-0.5),y1=r1*RH+RH/2,x2=cx(i2+len/2-0.5),y2=r2*RH+RH/2;
+      const my=(y1+y2)/2, mx=(x1+x2)/2;
+      arcOn(svg,x1,y1,x2,y2,mx,my, 'var(--violet)',1.1,.45);
+    }
+  }
+}
+function drawIsoMarks(svg){
+  if(SELECTED){ drawIsoRow(svg,SELECTED,true); return; }
+  if(FAM_ISO!=null){
+    // Show every within-family relation (cap marks for readability).
+    for(const row of familyIsoRows().slice(0,50)) drawIsoRow(svg,row,true);
+  }
+}
+function drawOverlay(){
+  overlay.innerHTML='';
+  if(MODE==='gaps'){for(const g of [2,4]){const col=g===2?'var(--rose)':'var(--blue)';
+    for(const p of gapPairs[g]){const y=cy(p.r)+RH/2-4,x1=cx(p.i),x2=cx(p.j),mx=(x1+x2)/2,dip=g===2?7:11;arcOn(overlay,x1,y,x2,y,mx,y+dip,col,1.6,.85);}}}
+  if(SELECTED || FAM_ISO!=null) drawIsoMarks(overlay);
+  if(PT&&PT.result){
+    for(const grp of PT.result.consistent) linkGroupOn(overlay,grp.ts,'var(--ok)');
+    for(const grp of PT.result.contradictions.slice(0,40)) linkGroupOn(overlay,grp.ts,'var(--bad)');
+    for(const grp of (PT.result.ctBad||[]).slice(0,40)) linkGroupOn(overlay,grp.ts,'var(--bad)');
+  }
+}
+function linkGroupOn(svg,ts,col){for(let a=0;a+1<ts.length;a++){const A=ts[a],B=ts[a+1];
+  const x1=cx(A.start+A.len/2-0.5),y1=A.row*RH+RH-9,x2=cx(B.start+B.len/2-0.5),y2=B.row*RH+RH-9,my=Math.min(y1,y2)-14;
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d',`M${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`);
+  p.setAttribute('fill','none');p.setAttribute('stroke',col);p.setAttribute('stroke-width',1.4);p.setAttribute('opacity',.8);svg.appendChild(p);}}
+function arcOn(svg,x1,y1,x2,y2,mx,my,col,w,op){const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d',`M${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`);p.setAttribute('fill','none');p.setAttribute('stroke',col);p.setAttribute('stroke-width',w);p.setAttribute('opacity',op);svg.appendChild(p);}
+function rectOn(svg,x,y,w,h){const r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx',2);r.setAttribute('fill','#ffffff0d');r.setAttribute('stroke','#ffffff1c');svg.appendChild(r);}
+
+const LEGENDS={
+ work:[['var(--ok)','repeated PT · shapes match'],['var(--bad)','violation · impossible'],['var(--amber)','filled once / untested']],
+ iso:[['#b78bff','symbol A'],['#54cfc6','symbol B'],['#e6a94b','symbol C'],['#e0668a','symbol D'],['#3d4250','· non-repeating']],
+  cols:[['var(--teal)','9/9 identical'],['color-mix(in srgb,var(--teal) 82%,#0c0e13)','5–8 agree'],['color-mix(in srgb,var(--teal) 58%,#0c0e13)','3–4 agree'],['color-mix(in srgb,var(--teal) 38%,#0c0e13)','2 agree'],['#2a3040','unique (dimmed)']],
+ gaps:[['var(--rose)','gap-2 · repeated bigram (ABAB)'],['var(--blue)','gap-4 · endpoints']],
+ raw:[['var(--a)','family α'],['var(--b)','family β'],['var(--g)','family γ']],
+};
+function drawLegend(){document.getElementById('legend').innerHTML=(LEGENDS[MODE]||[]).map(([c,t])=>`<div class="li"><span class="sw" style="background:${c}"></span>${t}</div>`).join('');}
+
+function setMode(mode){
+  MODE=mode;
+  document.querySelectorAll('#modeseg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode===mode));
+  document.getElementById('isotools').classList.remove('is-dim');
+  paint();
+}
+
+grid.addEventListener('mousemove',e=>{const el=e.target.closest('.cell');if(!el)return;
+  const r=+el.dataset.r,c=+el.dataset.c;if(HOVER===r+','+c)return;HOVER=r+','+c;
+  if(MODE==='iso'&&!SELECTED&&!PIN) showCellIsomorphs(r,c);});
+grid.addEventListener('mouseleave',()=>{HOVER=null;});
+document.getElementById('modeseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setMode(b.dataset.mode);});
+document.getElementById('repseg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#repseg button').forEach(x=>x.setAttribute('aria-pressed',x===b));MINREP=+b.dataset.rep;SELECTED=null;SCANRES=scan(W,MINREP,EXSHARED);rebuildIsoCells();renderList();paint();});
+document.getElementById('tShared').addEventListener('change',e=>{EXSHARED=e.target.checked;SELECTED=null;SCANRES=scan(W,MINREP,EXSHARED);rebuildIsoCells();renderList();paint();});
+document.getElementById('tFam').addEventListener('change',paint);
+document.getElementById('tCase').addEventListener('change',()=>{ updatePtAlpha(); schedulePT(); });
+document.getElementById('tIsoOnly').addEventListener('change',e=>{
+  const t=e.target;
+  if(!t.checked){
+    // Revert until confirmed — strict off weakens validation signal.
+    t.checked=true;
+    const box=document.getElementById('strict-warn');
+    box.hidden=false;
+    const finish=keep=>{
+      box.hidden=true;
+      if(!keep){ t.checked=false; applyStrictModeChange(); }
+    };
+    document.getElementById('strict-warn-keep').onclick=()=>finish(true);
+    document.getElementById('strict-warn-off').onclick=()=>finish(false);
+    document.getElementById('strict-warn-keep').focus();
+    return;
+  }
+  applyStrictModeChange();
+});
+function applyStrictModeChange(){
+  paint();
+  if(isoOnlyOn()&&ptFocus&&!canEditPt(ptFocus[0],ptFocus[1])){
+    let found=false;
+    for(let r=ptFocus[0];r<N&&!found;r++) for(let c=(r===ptFocus[0]?ptFocus[1]:0);c<MSGS[r].length;c++)
+      if(canEditPt(r,c)){ setPtFocus(r,c); found=true; break; }
+    if(!found) for(let r=0;r<=ptFocus[0]&&!found;r++) for(let c=0;c<MSGS[r].length;c++)
+      if(canEditPt(r,c)){ setPtFocus(r,c); found=true; break; }
+  }
+}
+
+document.getElementById('foot').innerHTML=
+ `<b>Job.</b> Falsify plaintext guesses. Checker slides every fully-filled span (not word tokens): same plaintext must share a gap pattern; identical ciphertext must share plaintext; shared-section columns must agree. Matching shapes never prove a reading. `+
+ `<b>Lenses</b> surface ciphertext structure (window-30 scan, leading/trailing <code>.</code> trimmed to the anchored core, shared-section copies collapsed for scoring, gap-2/4) so you know where to aim a guess — then check it on the grid. `+
+ `<span style="color:var(--dim)"> · v${APP_VERSION}</span>`;
+
+function showDisclaimerIfNeeded(){
+  document.getElementById('disclaimer-ver').textContent=APP_VERSION;
+  let ack=null;
+  try{ ack=localStorage.getItem(DISCLAIMER_STORE); }catch(_){}
+  if(ack===APP_VERSION) return;
+  const box=document.getElementById('disclaimer');
+  box.hidden=false;
+  document.getElementById('disclaimer-ok').focus();
+  document.getElementById('disclaimer-ok').onclick=()=>{
+    try{ localStorage.setItem(DISCLAIMER_STORE, APP_VERSION); }catch(_){}
+    box.hidden=true;
+  };
+}
+
+// ponytail: assert sliding-window catch of a word-tokenizer miss; restore board after
+function selfCheckValidation(){
+  const backup=ptBoard.map(row=>row.slice());
+  const restore=()=>{ for(let r=0;r<N;r++) for(let c=0;c<MSGS[r].length;c++) ptBoard[r][c]=backup[r][c]; };
+  const assert=(cond,msg)=>{ if(!cond) throw new Error('validation self-check: '+msg); };
+  PT_NOSAVE=true;
+  try{
+    // Find two length-3 CT windows with different gap patterns
+    let A=null,B=null;
+    for(let r=0;r<N&&!B;r++) for(let i=0;i+3<=MSGS[r].length;i++){
+      const p=ctGap(r,i,3);
+      if(!A){A={r,i,p};continue;}
+      if(p!==A.p){B={r,i,p};break;}
+    }
+    assert(A&&B,'need two distinct trigram gap patterns in corpus');
+    clearPtBoard();
+    placeWord(A.r,A.i,'CAT',false);
+    // Embed the same letters inside a longer contiguous claim so a word-tokenizer
+    // would see "xxCATyy" vs "CAT" and wrongly approve.
+    if(B.i>=2){ ptBoard[B.r][B.i-2]='x'; ptBoard[B.r][B.i-1]='x'; }
+    placeWord(B.r,B.i,'CAT',false);
+    if(B.i+4<MSGS[B.r].length){ ptBoard[B.r][B.i+3]='y'; ptBoard[B.r][B.i+4]='y'; }
+    runPT();
+    assert(PT.result.nContra>0,'same PT substring with different CT shapes must fail');
+    // Matching long isomorph pair must stay clean
+    clearPtBoard();
+    placeWord(0,40,'CANONICAL',false);
+    placeWord(0,68,'CANONICAL',false);
+    runPT();
+    assert(PT.result.nContra===0,'matching CANONICAL pair must not contradict');
+    assert(PT.result.nOk>0,'matching CANONICAL pair must register as repeated PT');
+    // Identical shared-section CT with different letters must fail
+    clearPtBoard();
+    const sh=SHARED_GROUPS.find(g=>g.length>=2);
+    assert(sh,'need a shared-section group');
+    ptBoard[sh[0][0]][sh[0][1]]='A';
+    ptBoard[sh[1][0]][sh[1][1]]='B';
+    runPT();
+    assert(PT.result.nShared>0||PT.result.nCtBad>0,'shared-section letter clash must fail');
+    console.log('validation self-check passed');
+  } finally {
+    PT_NOSAVE=false;
+    restore();
+  }
+}
+
+rebuildIsoCells();
+renderList();setMode('work');
+selfCheckValidation();
+if(loadPtBoard()) runPT(); else loadDemo();
+showDisclaimerIfNeeded();
+</script>
+</body>
+</html>

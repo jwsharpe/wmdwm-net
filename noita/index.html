@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eyes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* aligned with eye-solver.html */
+  --bg:#0c0e13; --panel:#12151d; --panel2:#161a24; --edge:#242a37; --edge2:#2e3545;
+  --ink:#dcd7c9; --dim:#8b8676; --faint:#5a5648;
+  --violet:#b78bff; --violet-d:#7a5bd6;
+  --east:#e6a94b; --west:#54cfc6;
+  --sel:#b78bff; --ident:#e6a94b; --mm:#e05a6b;
+  --famA:#c76b4a; --famB:#5aa06a; --famG:#8a74e0;
+  --k3:#5fca7d; --gap4:#8a74e0;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --disp:"Syne",sans-serif;
+  --cell-w:26px; --cell-h:20px; --cell-fs:10.5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:12px;line-height:1.35}
+::selection{background:var(--violet-d);color:#fff}
+
+.bar{position:sticky;top:0;z-index:60;background:rgba(12,14,19,.93);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--edge);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 10px}
+.brand{font-family:var(--disp);font-size:18px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.brand b{color:var(--sel)}
+.counts{color:var(--faint);font-size:10px;white-space:nowrap}
+.ctl{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim)}
+.ctl.on{color:var(--ink)}
+.ctl.filtertoggle{border:1px solid var(--edge2);padding:2px 7px;border-radius:2px;cursor:pointer;user-select:none;background:var(--panel2)}
+.ctl.filtertoggle:hover{border-color:var(--dim);color:var(--ink)}
+.ctl.filtertoggle.on{background:var(--ident);border-color:var(--ident);color:var(--bg);font-weight:600}
+.ctl.filtertoggle input{accent-color:var(--bg)}
+.offpick{display:flex;align-items:center;gap:3px;flex-wrap:wrap;width:100%}
+.offpick .offpicklab{color:var(--faint);font-size:10px;margin-right:2px}
+.offtog{font-family:var(--mono);font-size:10px;padding:2px 6px;border:1px solid var(--edge2);border-radius:2px;cursor:pointer;
+  background:var(--panel2);color:var(--faint);user-select:none;line-height:1.3}
+.offtog:hover{color:var(--ink);border-color:var(--dim)}
+.offtog.on{background:var(--gap4);border-color:var(--gap4);color:var(--bg);font-weight:600}
+.msgpick{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.msgpick .msgpicklab{color:var(--faint);font-size:10px;margin-right:2px}
+.msgtog{font-size:10px;padding:2px 6px;border:1px solid var(--edge2);border-radius:2px;cursor:pointer;
+  background:var(--panel2);color:var(--faint);user-select:none;line-height:1.3}
+.msgtog:hover{color:var(--ink);border-color:var(--dim)}
+.msgtog.grp{font-weight:600;color:var(--dim)}
+.msgtog.E.on{background:var(--east);border-color:var(--east);color:var(--bg);font-weight:600}
+.msgtog.W.on{background:var(--west);border-color:var(--west);color:var(--bg);font-weight:600}
+select,input[type=number]{font-family:var(--mono);font-size:10.5px;background:var(--panel2);color:var(--ink);
+  border:1px solid var(--edge2);padding:2px 4px;border-radius:2px}
+input[type=number]{width:46px}
+select:focus-visible,input:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--sel);outline-offset:1px}
+button{font-family:var(--mono);font-size:10.5px;background:var(--panel2);color:var(--dim);
+  border:1px solid var(--edge2);padding:2px 7px;border-radius:2px;cursor:pointer}
+button:hover{color:var(--ink);border-color:var(--dim)}
+button.on{background:var(--sel);border-color:var(--sel);color:var(--bg);font-weight:600}
+
+.main{display:grid;grid-template-columns:260px 1fr;gap:0;height:calc(100vh - 36px)}
+@media(max-width:900px){.main{grid-template-columns:1fr;height:auto}.side{max-height:240px;border-right:none;border-bottom:1px solid var(--edge)}}
+.side{border-right:1px solid var(--edge);overflow-y:auto;background:var(--panel);max-height:calc(100vh - 36px)}
+
+.modes{display:flex;flex-wrap:wrap;gap:3px;padding:6px;border-bottom:1px solid var(--edge)}
+.modebtn{flex:1 1 auto;min-width:58px;font-size:9.5px;padding:4px 5px;text-align:center}
+.filters{padding:6px 8px;border-bottom:1px solid var(--edge);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.filters.hidden{display:none}
+.filters.col{flex-direction:column;align-items:stretch;gap:8px}
+.rangewrap{display:flex;flex-direction:column;gap:6px;width:100%}
+.rangelabels{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
+.rangelabels b{color:var(--sel);font-weight:600}
+.singlerange{width:100%;margin:4px 0;height:14px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+.singlerange::-webkit-slider-runnable-track{height:5px;background:var(--edge2);border-radius:2px}
+.singlerange::-moz-range-track{height:5px;background:var(--edge2);border-radius:2px}
+.singlerange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--gap4);border:2px solid var(--bg);cursor:pointer;margin-top:-5.5px}
+.singlerange::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gap4);border:2px solid var(--bg);cursor:pointer}
+.dualrange{position:relative;height:22px;margin:2px 0 6px}
+.dualrange input[type=range]{position:absolute;left:0;top:0;width:100%;margin:0;height:22px;
+  -webkit-appearance:none;appearance:none;background:transparent;pointer-events:none}
+.dualrange input[type=range]::-webkit-slider-runnable-track{height:5px;background:transparent;border-radius:2px;margin-top:8.5px}
+.dualrange input[type=range]::-moz-range-track{height:5px;background:transparent;border-radius:2px}
+.dualrange input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--gap4);border:2px solid var(--bg);cursor:pointer;margin-top:-5.5px;pointer-events:auto;position:relative;z-index:2}
+.dualrange input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gap4);
+  border:2px solid var(--bg);cursor:pointer;pointer-events:auto;position:relative;z-index:2}
+.dualrange .dualtrack{position:absolute;left:0;right:0;top:8.5px;height:5px;background:var(--edge2);border-radius:2px;pointer-events:none}
+.dualrange .dualfill{position:absolute;top:8.5px;height:5px;background:var(--gap4);border-radius:2px;opacity:.55;pointer-events:none}
+.gapstats{display:flex;flex-wrap:wrap;gap:5px}
+.gapchip{font-size:12px;padding:6px 10px;border:1px solid var(--edge2);border-radius:3px;color:var(--dim);
+  background:var(--panel2);font-weight:500;line-height:1.2}
+.gapchip:hover{border-color:var(--gap4);color:var(--ink)}
+.gapchip.on{border-color:var(--gap4);color:#E8DEFF;background:color-mix(in srgb,var(--gap4) 18%,var(--panel2));font-weight:700;
+  box-shadow:0 0 0 1px var(--gap4)}
+.gapchip b{color:var(--sel);font-size:13px}
+
+.listhead{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--edge2);
+  padding:5px 8px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);z-index:5}
+.listdesc{padding:5px 8px;font-size:9.5px;color:var(--faint);border-bottom:1px solid var(--edge);line-height:1.35}
+
+.row{display:grid;grid-template-columns:10px 1fr auto;gap:6px;align-items:center;
+  padding:4px 8px;border-bottom:1px solid var(--edge);cursor:pointer;font-size:10.5px}
+.row:hover{background:var(--panel2)}
+.row.sel{background:var(--sel);color:var(--bg)}
+.row.sel .meta{color:#2a2040}
+.row .dot{width:7px;height:7px;border-radius:50%}
+.row .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .meta{color:var(--faint);font-size:9.5px;white-space:nowrap}
+.dot.perfect{background:var(--k3)} .dot.arithmetic{background:var(--mm)}
+.dot.rank{background:var(--ident)} .dot.imperfect{background:var(--mm)}
+.dot.gap4{background:var(--gap4)}
+.dot.refrain{background:var(--ident)} .dot.samepos{background:var(--west)}
+.dot.offset{background:var(--gap4)}
+.dot.freq{background:var(--ident)}
+.row.freqrow{grid-template-columns:48px 1fr 48px;gap:6px}
+.row .freqbarwrap{height:10px;background:var(--panel2);border-radius:1px;overflow:hidden;min-width:0}
+.row .freqbar{height:100%;background:var(--ident);border-radius:1px}
+.row.sel .freqbar{background:var(--bg)}
+.row.sel .dot{box-shadow:0 0 0 1px var(--bg)}
+.empty{padding:12px 8px;color:var(--faint);font-size:10.5px}
+
+.stage{overflow-y:auto;padding:0 0 8px;min-height:0;background:var(--bg)}
+.msg{display:flex;align-items:flex-start;gap:6px;border-bottom:1px solid var(--edge);padding:3px 8px 4px;
+  position:relative}
+/* family tint — same idea as eye-solver .rowbg at ~6% */
+.msg.fam-a{background:color-mix(in srgb,var(--famA) 7%,var(--bg))}
+.msg.fam-b{background:color-mix(in srgb,var(--famB) 7%,var(--bg))}
+.msg.fam-g{background:color-mix(in srgb,var(--famG) 7%,var(--bg))}
+.mhead{flex:0 0 58px;padding-top:1px;display:flex;align-items:center;gap:6px}
+.mhead .fam{width:6px;height:14px;border-radius:1px;flex:0 0 auto}
+.mhead .fam.fam-a,.sw.fam-a{background:var(--famA)}
+.mhead .fam.fam-b,.sw.fam-b{background:var(--famB)}
+.mhead .fam.fam-g,.sw.fam-g{background:var(--famG)}
+.tagE,.tagW{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;padding:0 4px;border-radius:2px;color:var(--bg);display:inline-block}
+.tagE{background:var(--east)} .tagW{background:var(--west)}
+.mmeta{display:none}
+.cells{display:flex;flex-wrap:wrap;gap:1px;flex:1;min-width:0}
+.cells.wrap26{max-width:calc(26 * var(--cell-w) + 25 * 1px)}
+.c{width:var(--cell-w);height:var(--cell-h);display:flex;align-items:center;justify-content:center;position:relative;
+  background:var(--panel);border:1px solid var(--edge);border-radius:1px;font-size:var(--cell-fs);color:var(--dim);cursor:pointer;line-height:1}
+.c:hover{border-color:var(--violet);color:var(--ink);z-index:2;outline:1px solid var(--violet);outline-offset:-1px}
+.c.serial{background:var(--ident);border-color:var(--ident);color:var(--bg);font-weight:700}
+.c.ident-a{box-shadow:inset 0 -2px 0 var(--famA)}
+.c.ident-b{box-shadow:inset 0 -2px 0 var(--famB)}
+.c.ident-g{box-shadow:inset 0 -2px 0 var(--famG)}
+.c.same{background:color-mix(in srgb,var(--k3) 22%,var(--bg));border-color:var(--k3);color:#BFE6C4}
+.c.pinned{background:color-mix(in srgb,var(--violet) 28%,var(--bg));border-color:var(--violet-d);color:#EAF0FF;font-weight:600}
+.c.spanA{border-color:var(--east);background:color-mix(in srgb,var(--east) 14%,var(--bg));color:var(--ink)}
+.c.spanB{border-color:var(--west);background:color-mix(in srgb,var(--west) 14%,var(--bg));color:var(--ink)}
+.c.isoBox{border-radius:0;z-index:1}
+.c.isoLink{font-weight:700;z-index:2}
+.c.isoLink.isoHov{filter:brightness(1.35);outline:1.5px solid var(--ink);outline-offset:-1px;z-index:4}
+.c.x{border:2px dashed var(--mm)!important;background:color-mix(in srgb,var(--mm) 34%,var(--bg))!important;color:#FFB0B0!important;font-weight:700;z-index:5}
+.c.x.isoGap{box-shadow:0 0 0 1.5px var(--mm)}
+.c.samepos{border-color:var(--west);background:color-mix(in srgb,var(--west) 16%,var(--bg));color:var(--ink);font-weight:600}
+.c.offA{border-color:var(--gap4);background:color-mix(in srgb,var(--gap4) 22%,var(--bg));color:#E8DEFF;font-weight:600}
+.c.offB{border-color:var(--gap4);background:color-mix(in srgb,var(--gap4) 12%,var(--bg));color:#C9B8F0;font-weight:600;box-shadow:inset 0 -2px 0 var(--gap4)}
+.c.gapHit{border-color:var(--gap4);background:color-mix(in srgb,var(--gap4) 18%,var(--bg));color:#E8DEFF;font-weight:600}
+.c.gapHit.gapFocus{box-shadow:0 0 0 1.5px var(--ident);border-color:var(--ident);color:#FFF6D0;z-index:3}
+.msg.hidden{display:none}
+.c.isoRing{z-index:4}
+.c .tip{display:none;position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);
+  background:#000;color:var(--ink);border:1px solid var(--edge2);border-radius:2px;
+  font-size:9px;padding:2px 5px;white-space:nowrap;z-index:30;pointer-events:none}
+.c:hover .tip{display:block}
+
+.detail{margin:6px 8px 4px;padding:6px 8px;border:1px solid var(--edge2);background:var(--panel2);
+  border-radius:2px;font-size:10.5px;color:var(--dim);line-height:1.4;display:none}
+.detail.show{display:block}
+.detail b{color:var(--ink)}
+.detail .mono{color:var(--ident)}
+
+.foot{padding:6px 8px;color:var(--faint);font-size:9.5px;border-top:1px solid var(--edge)}
+.foot span{white-space:nowrap;display:inline-block;margin-right:10px;margin-bottom:2px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:1px;vertical-align:-1px;margin-right:3px}
+.rtbl{width:100%;border-collapse:collapse;font-size:9.5px;margin:6px 0 4px}
+.rtbl th,.rtbl td{border:1px solid var(--edge2);padding:2px 5px;text-align:left;white-space:nowrap}
+.rtbl th{color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:8.5px}
+.rtbl td{color:var(--dim)}
+.rtbl td.hot{color:var(--ident);font-weight:600}
+.rnote{font-size:9.5px;color:var(--faint);line-height:1.4;margin-bottom:2px}
+.notesbox{display:flex;flex-direction:column;gap:6px;padding:6px 8px}
+.notesbox textarea{width:100%;min-height:120px;resize:vertical;font-family:var(--mono);font-size:11px;
+  background:var(--panel2);color:var(--ink);border:1px solid var(--edge2);border-radius:2px;padding:6px;line-height:1.4}
+.notesbox textarea:focus{outline:2px solid var(--sel);outline-offset:1px}
+.cribform{display:flex;flex-direction:column;gap:5px}
+.cribform input[type=text]{width:100%;font-family:var(--mono);font-size:11px;background:var(--panel2);color:var(--ink);
+  border:1px solid var(--edge2);padding:4px 6px;border-radius:2px}
+.cribhint{font-size:9.5px;color:var(--faint);line-height:1.35}
+.criblist{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
+.cribrow{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:center;padding:4px 6px;
+  border:1px solid var(--edge);border-radius:2px;font-size:10px;cursor:pointer}
+.cribrow:hover{background:var(--panel2)}
+.cribrow.sel{border-color:var(--ident);background:color-mix(in srgb,var(--ident) 14%,var(--bg))}
+.cribrow .meta{color:var(--faint);font-size:9px}
+.cribrow button{font-size:9px;padding:1px 5px}
+/* crib letter on top via ::before — CT number stays the cell text */
+.c.hasCrib{flex-direction:column;gap:1px;height:auto;min-height:calc(var(--cell-h) + 12px);padding:1px 0;
+  font-size:var(--cell-fs);color:var(--dim);line-height:1}
+.c.hasCrib::before{content:attr(data-pt);font-size:11px;color:var(--ident);font-weight:700;line-height:1.1}
+.c.cribAnchor{outline:1.5px solid var(--sel);outline-offset:-1px;z-index:3}
+.c.freqHit{border-color:var(--ident);background:color-mix(in srgb,var(--ident) 14%,var(--bg));color:#FFF6D0;font-weight:600}
+
+.disclaimer{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:rgba(6,8,12,.82);backdrop-filter:blur(6px)}
+.disclaimer[hidden]{display:none!important}
+.disclaimer-card{
+  max-width:520px;width:100%;border:1px solid var(--edge);border-radius:4px;
+  background:var(--panel);padding:22px 24px;box-shadow:0 18px 50px #000a}
+.disclaimer-card h2{font-family:var(--disp);font-size:18px;margin:0 0 12px;letter-spacing:.02em;font-weight:700}
+.disclaimer-card p{margin:0 0 10px;color:var(--dim);font-size:12.5px;line-height:1.55}
+.disclaimer-card .ver{color:var(--faint);font-size:11px;margin:14px 0 0}
+.disclaimer-card .ver b{color:var(--ident)}
+.disclaimer-card .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.disclaimer-card .okbtn{appearance:none;border:1px solid var(--violet-d);background:var(--violet);color:var(--bg);
+  font-family:inherit;font-weight:700;font-size:12px;padding:8px 14px;border-radius:3px;cursor:pointer}
+.disclaimer-card .okbtn:hover{filter:brightness(1.08)}
+</style>
+</head>
+<body>
+
+<div class="disclaimer" id="disclaimer" hidden role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+  <div class="disclaimer-card">
+    <h2 id="disclaimer-title">Before you use this</h2>
+    <p>This site is <b style="color:var(--ink)">&gt;95% AI-generated</b>. UI, tooling, and most analysis code were written by a machine.</p>
+    <p>The analysis tooling is <b style="color:var(--ink)">mostly reviewed</b>, but some results are often taken for granted when a cursory glance at the data looks right. The generator functions for creating the lists of patterns should be right, but possibly not exhaustive.</p>
+    <p>Releasing this as a novelty as I've been mostly using this as a self-research tool.</p>
+    <p>Besides this, most of the written text has not been reviewed.
+    <p class="ver">Version <b id="disclaimer-ver"></b> — this notice returns after every update.</p>
+    <div class="actions"><button class="okbtn" id="disclaimer-ok" type="button">I understand</button></div>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="counts" id="counts"></div>
+  <button id="bClear">clear selection</button>
+  <label class="ctl filtertoggle on"><input type="checkbox" id="showIdent" checked> Identical Passages</label>
+  <label class="ctl"><input type="checkbox" id="wrap26" checked> 26 Glyph Wrap</label>
+  <div class="msgpick" id="msgpick"></div>
+</div>
+
+<div class="main">
+  <aside class="side">
+    <div class="modes" id="modes"></div>
+    <div class="filters" id="filters"></div>
+    <div class="listdesc" id="listdesc"></div>
+    <div class="listhead" id="listhead">patterns</div>
+    <div id="list"></div>
+  </aside>
+  <div class="stage">
+    <div class="detail" id="detail"></div>
+    <div id="grid"></div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script id="d" type="application/json">{"names":["East 1","West 1","East 2","West 2","East 3","West 3","East 4","West 4","East 5"],"messages":{"East 1":[50,66,5,48,62,13,75,29,24,61,42,70,66,62,32,14,81,8,15,78,2,29,13,49,1,80,82,40,63,81,21,19,0,40,51,65,26,14,21,70,47,44,48,42,19,48,13,47,19,49,72,31,5,24,3,43,59,67,33,49,41,60,21,26,30,5,25,20,71,11,74,56,4,74,19,71,4,51,41,43,80,72,54,63,79,81,15,16,44,31,30,12,33,57,28,13,64,43,48],"West 1":[80,66,5,48,62,13,75,29,24,61,42,70,66,62,32,14,81,8,15,78,2,29,13,49,1,29,11,30,52,81,21,19,0,25,26,54,20,14,21,70,47,44,48,42,19,48,13,47,19,49,44,26,59,77,64,43,79,28,72,64,1,30,73,23,67,6,33,25,64,81,68,46,17,36,13,17,21,68,13,9,46,67,57,34,62,82,15,10,73,62,2,11,65,72,37,44,10,43,68,62,9,34,18],"East 2":[36,66,5,48,62,13,75,29,24,61,42,70,66,62,32,14,81,8,15,78,2,29,13,49,1,69,76,52,9,48,66,80,22,64,57,40,49,78,3,16,56,19,47,40,80,6,13,64,29,49,64,63,6,49,31,13,16,10,45,24,26,77,10,60,81,61,34,54,70,21,15,4,66,77,42,37,30,22,0,11,41,72,57,20,23,57,65,41,23,18,72,42,5,3,26,78,8,5,54,45,77,25,64,61,16,44,54,51,20,63,25,11,26,45,53,60,38,34],"West 2":[76,66,5,49,75,54,69,46,32,1,42,60,26,48,50,80,32,24,55,61,47,12,21,12,49,54,34,25,36,15,56,55,20,9,8,62,13,82,9,44,29,60,53,82,42,80,5,43,71,3,80,77,47,78,34,25,62,18,10,49,62,64,52,81,11,66,62,13,47,17,52,70,26,23,32,31,64,23,35,32,50,6,1,25,8,37,47,43,26,76,65,68,80,17,7,45,63,14,53,63,60,16],"East 3":[63,66,5,49,75,54,2,60,29,40,78,47,60,75,67,71,60,2,65,7,47,14,45,74,59,41,80,13,60,13,81,22,35,50,40,39,2,59,48,31,76,2,80,75,1,56,67,11,21,8,40,65,45,75,55,39,60,42,13,3,22,57,2,6,58,9,70,1,58,56,63,68,25,79,7,20,19,64,2,66,73,30,71,16,12,30,65,37,20,13,22,63,18,46,64,59,41,81,82,22,78,36,47,17,4,6,17,5,36,79,63,1,64,69,15,43,4,58,56,31,14,64,58,18,44,78,69,1,0,46,20,71,73,25,35,8,24],"West 3":[34,66,5,49,75,54,23,74,11,13,28,26,19,48,67,57,37,60,34,28,74,10,17,32,11,18,19,43,19,81,42,4,62,9,46,49,32,51,76,58,4,43,47,17,67,79,21,32,44,16,30,37,26,28,41,68,57,34,51,10,69,70,8,6,46,43,18,39,47,43,15,13,33,30,35,62,37,0,37,5,38,55,37,13,40,25,9,21,11,64,5,79,42,68,11,71,11,48,3,67,61,40,22,14,35,50,61,39,11,2,66,49,51,53,17,73,36,75,74,54,24,30,54,70],"East 4":[27,66,5,49,75,54,2,60,29,40,2,55,9,15,59,18,68,3,36,5,47,77,44,38,1,18,28,76,4,34,60,63,58,80,17,54,79,75,48,54,55,19,62,64,14,47,51,70,75,5,11,47,45,58,68,69,79,25,38,45,73,47,68,50,34,45,78,26,79,57,4,56,22,60,18,75,43,60,59,67,63,42,49,33,40,65,79,77,7,3,26,62,31,78,26,57,69,40,4,23,26,13,67,42,38,72,11,39,65,60,25,6,80,66,68,77,59,78,19],"West 4":[77,66,5,49,75,54,2,60,29,40,2,55,9,15,59,18,68,3,36,5,47,60,21,80,1,72,55,16,82,35,57,19,1,66,18,27,39,17,74,81,39,14,78,0,25,65,43,66,64,38,81,23,24,50,57,30,71,75,26,68,54,57,56,50,71,73,14,21,8,32,26,63,5,37,19,43,66,47,53,34,66,23,73,31,54,38,77,67,11,63,79,6,22,21,51,69,74,21,5,17,67,37,29,21,60,14,82,44,30,4,20,42,35,1,31,54,46,20,40,30],"East 5":[33,66,5,49,75,54,2,60,29,40,2,55,9,15,59,18,68,3,36,5,47,33,21,59,44,18,28,76,59,34,60,63,79,27,12,54,5,49,48,54,55,52,62,72,69,10,57,22,58,48,67,53,7,34,32,30,31,19,26,8,34,46,7,30,71,55,34,75,54,9,6,60,5,23,25,45,42,80,25,12,22,76,20,51,62,21,40,9,41,10,44,73,8,33,70,73,6,31,21,72,5,40,61,51,42,66,64,74,61,25,63,42,24,41]},"iso":{"perfect":[[6,7,68,71,34,7],[6,8,57,58,33,3],[1,1,33,63,33,6],[7,8,34,33,33,6],[7,8,68,66,33,5],[2,2,39,74,32,6],[6,8,68,69,30,5],[0,2,0,0,29,4],[2,2,37,72,28,6],[4,6,63,72,28,3],[4,8,63,73,28,3],[4,7,63,75,28,3],[6,8,71,72,28,3],[6,8,72,73,28,3],[6,7,86,89,28,2],[1,2,29,34,28,7],[7,8,74,72,28,3],[7,8,75,73,28,3],[6,7,63,66,27,2],[1,2,60,70,27,5],[7,8,66,64,27,2],[0,0,33,61,26,3],[6,7,82,85,26,3],[1,1,32,62,26,5],[3,5,9,14,26,2],[0,2,53,65,25,3],[0,1,0,0,25,4],[1,2,0,0,25,4],[1,2,32,72,25,5],[1,2,62,37,25,5],[4,6,76,1,23,2],[4,5,18,17,23,2],[6,7,80,83,23,3],[1,4,55,86,23,3],[3,4,12,18,23,2],[0,1,28,28,22,5],[4,8,76,1,22,2],[6,8,1,1,22,2],[6,8,46,47,22,4],[0,2,29,34,21,5],[6,8,0,0,21,2],[6,7,0,0,21,2],[7,8,0,0,21,2],[0,1,58,60,20,3],[4,7,76,1,20,2],[6,7,46,48,19,3],[0,0,32,60,18,3],[0,2,32,72,18,3],[0,2,60,37,18,3],[0,4,58,91,18,2],[0,1,32,62,18,3],[0,1,60,32,18,3],[2,4,70,91,18,2],[0,1,42,42,17,2],[0,1,42,72,17,2],[0,1,70,42,17,2],[0,1,70,72,17,2],[3,6,51,85,17,2],[3,6,53,87,17,2],[3,7,51,88,17,2],[3,7,53,90,17,2],[0,4,32,93,16,2],[2,4,37,93,16,2],[1,4,32,93,16,2],[0,2,42,47,15,2],[0,2,42,82,15,2],[0,2,70,47,15,2],[0,2,70,82,15,2]],"arithmetic":[[2,8,102,75,4,64],[4,4,34,127,4,44]],"rank":[[0,4,20,74,8],[0,1,28,28,8],[2,4,19,73,8],[2,8,50,50,8],[4,8,104,38,8],[4,5,104,33,8],[6,8,0,0,8],[3,4,6,86,8],[5,6,107,109,8],[5,8,33,38,8]],"imperfect":[[0,1,0,0,50,16,2],[7,8,21,20,46,7,3],[6,8,46,47,44,6,3],[6,8,49,50,44,6,3],[7,8,25,24,44,7,2],[6,7,60,63,42,7,3],[6,8,57,58,41,6,3],[6,7,67,70,41,7,3],[6,8,5,5,40,6,3],[1,2,34,39,40,5,3],[4,7,63,75,39,3,3],[6,8,40,41,39,5,3],[1,2,28,33,39,7,3],[7,8,34,33,39,6,3],[7,8,62,60,39,5,3],[2,2,37,72,38,6,3],[4,8,51,61,38,3,3],[0,1,22,22,37,7,3],[2,2,34,69,37,6,3],[2,2,36,71,37,6,3],[4,7,62,74,37,3,3],[1,1,29,59,37,6,3],[7,8,38,37,37,5,3],[7,8,68,66,37,5,3],[0,2,0,0,36,4,3],[4,6,63,72,36,3,3],[4,8,50,60,36,2,3],[6,8,0,0,36,5,3],[6,8,39,40,36,4,3],[6,7,37,39,36,5,3],[1,2,0,0,36,4,3],[1,2,48,58,36,5,3],[1,2,51,61,36,5,3],[1,1,25,55,36,6,3],[4,6,71,80,35,2,3],[4,8,63,73,35,3,3],[6,8,72,73,35,3,3],[6,7,58,61,35,2,3],[1,2,24,29,35,7,3],[1,2,63,38,35,5,3],[1,1,28,58,35,6,3],[7,8,75,73,35,3,3],[0,2,51,63,34,3,3],[0,1,28,28,34,5,3],[6,8,68,69,34,5,3],[1,2,23,28,34,7,3],[1,2,23,63,34,5,3],[1,2,27,32,34,7,3],[1,2,32,72,34,5,3],[1,2,34,74,34,5,3],[1,2,62,37,34,5,3],[1,2,64,74,34,5,3],[1,1,24,54,34,5,3],[1,1,34,64,34,6,1],[7,8,59,57,34,2,3],[0,2,63,40,33,3,3],[0,1,53,55,33,3,3],[0,1,63,35,33,3,3],[4,7,56,68,33,3,3],[4,7,61,73,33,3,3],[6,8,15,15,33,2,3],[6,7,57,60,33,2,3],[6,7,78,81,33,3,3],[6,7,81,84,33,3,3],[1,2,63,73,33,5,3],[0,0,33,61,32,3,3],[0,0,37,65,32,3,3],[0,0,39,67,32,3,3],[0,2,56,68,32,3,3],[2,2,33,68,32,6,3],[2,2,45,80,32,5,3],[4,6,61,70,32,3,3],[4,8,61,71,32,3,3],[4,7,54,66,32,2,3],[4,7,73,85,32,2,3],[7,8,47,46,32,3,3],[7,8,81,79,32,2,3],[0,0,28,56,31,3,3],[0,0,31,59,31,3,3],[0,2,50,62,31,3,3],[0,2,63,75,31,3,3],[0,2,65,77,31,3,3],[0,1,42,42,31,2,3],[0,1,63,65,31,3,3],[0,1,65,67,31,3,3],[2,2,32,67,31,6,3],[4,8,59,69,31,3,3],[4,5,41,37,31,2,3],[4,7,72,84,31,2,3],[6,8,36,37,31,5,3],[6,7,46,48,31,4,2],[1,2,28,68,31,5,3],[1,4,47,78,31,3,2],[3,4,12,18,31,2,3],[3,6,37,71,31,2,3],[3,8,62,63,31,2,3],[3,5,10,15,31,2,3],[3,7,37,74,31,2,3],[0,2,29,34,30,5,3],[0,2,60,37,30,3,3],[0,1,60,32,30,3,3],[2,4,58,79,30,2,3],[4,6,59,68,30,3,3],[4,6,75,0,30,2,3],[4,5,18,17,30,2,3],[4,7,76,1,30,2,3],[6,6,70,87,30,2,3],[6,7,0,0,30,2,3],[6,7,50,52,30,4,3],[6,7,87,73,30,2,3],[1,2,57,32,30,5,3],[1,8,5,19,30,2,3],[3,6,63,63,30,2,3],[3,5,8,13,30,2,3],[3,5,12,17,30,2,3],[3,7,40,77,30,2,3],[3,7,46,83,30,2,3],[3,7,63,66,30,2,3],[0,2,28,33,29,5,3],[0,2,49,61,29,3,3],[0,2,70,47,29,2,3],[0,1,33,63,29,3,3],[0,1,39,39,29,3,3],[0,1,61,63,29,3,3],[0,1,70,42,29,2,3],[6,8,35,36,29,4,3],[6,7,35,37,29,4,3],[6,7,45,47,29,4,2],[1,4,46,28,29,2,3],[3,4,69,31,29,2,3],[3,4,70,32,29,2,3],[3,5,6,11,29,2,2],[7,8,86,84,29,2,3],[0,2,62,74,28,3,3],[0,1,37,37,28,3,3],[0,1,37,67,28,3,3],[0,1,50,52,28,3,3],[0,1,59,31,28,3,3],[4,6,58,67,28,2,3],[4,5,13,12,28,2,3],[6,7,88,91,28,2,1],[3,4,7,13,28,2,3],[3,6,62,62,28,2,3],[3,7,62,65,28,2,3],[0,2,19,24,27,3,3],[0,2,32,72,27,3,3],[0,2,35,40,27,3,3],[0,2,35,75,27,3,3],[0,4,32,93,27,2,3],[0,4,49,82,27,2,3],[0,4,61,94,27,2,3],[0,1,31,61,27,3,3],[4,8,76,1,27,2,3],[4,5,17,16,27,2,3],[6,8,83,84,27,2,3],[1,2,19,24,27,3,3],[1,2,22,27,27,5,3],[1,2,22,62,27,3,3],[1,8,2,16,27,2,3],[3,4,11,17,27,2,3],[3,4,66,28,27,2,3],[3,6,61,61,27,2,3],[3,8,61,62,27,2,3],[3,7,61,64,27,2,3],[0,2,23,28,26,5,3],[0,2,23,63,26,3,3],[0,2,24,29,26,5,3],[0,2,24,64,26,3,3],[0,2,31,71,26,3,3],[0,2,39,44,26,3,3],[0,2,39,79,26,3,3],[0,2,42,47,26,2,3],[0,2,59,36,26,3,3],[0,1,42,72,26,2,3],[0,1,51,23,26,3,3],[0,1,52,24,26,3,3],[4,5,10,9,26,2,3],[4,5,24,23,26,2,3],[4,7,75,0,26,2,3],[1,4,22,83,26,2,3],[1,1,23,53,26,3,3],[3,4,53,61,26,2,3],[3,4,65,27,26,2,3],[3,6,48,82,26,2,3],[3,6,53,70,26,2,3],[3,6,53,87,26,2,3],[3,8,53,71,26,2,3],[3,7,53,73,26,2,3],[3,7,53,90,26,2,3],[0,0,25,53,25,3,3],[0,4,23,84,25,2,3],[0,1,25,55,25,3,3],[3,6,51,85,25,2,3],[7,8,0,0,25,2,2],[0,4,31,92,24,2,3],[0,4,59,92,24,2,3],[0,7,24,94,24,2,3],[2,4,71,92,24,2,3],[1,4,35,96,24,2,3],[1,4,61,92,24,2,3],[1,4,65,96,24,2,3],[3,7,53,3,24,2,3],[5,6,72,29,24,2,3],[0,2,55,32,23,3,3],[2,4,37,93,23,2,3],[4,8,75,0,23,2,2],[1,4,32,93,23,2,3],[2,4,40,96,22,2,3],[2,4,75,96,22,2,3],[5,6,77,34,22,2,3],[2,4,32,88,21,2,3],[2,4,36,92,19,2,2],[1,4,31,92,19,2,2]]},"refrain":[{"a":"East 1","i":33,"b":"East 1","j":61,"len":28,"links":3,"tandem":1,"period":28,"isoLen":26,"verified":26,"identity":0,"regionEnd":88,"msgLen":99,"skeleton":[[7,14],[9,12],[11,15]]},{"a":"West 1","i":33,"b":"West 1","j":63,"len":30,"links":6,"tandem":1,"period":30,"isoLen":33,"verified":30,"identity":0,"regionEnd":92,"msgLen":103,"skeleton":[[1,18],[7,14],[8,17],[9,12],[11,15],[21,26]]},{"a":"East 2","i":38,"b":"East 2","j":73,"len":35,"links":6,"tandem":1,"period":35,"isoLen":27,"verified":27,"identity":0,"regionEnd":107,"msgLen":118,"skeleton":[[1,18],[7,14],[8,17],[9,12],[11,15],[19,24]]},{"a":"East 1","i":33,"b":"West 1","j":33,"len":17,"links":3,"tandem":0,"ta":"copy1","tb":"copy1"},{"a":"East 1","i":33,"b":"West 1","j":63,"len":17,"links":3,"tandem":0,"ta":"copy1","tb":"copy2"},{"a":"East 1","i":33,"b":"East 2","j":38,"len":17,"links":3,"tandem":0,"ta":"copy1","tb":"copy1"},{"a":"East 1","i":33,"b":"East 2","j":73,"len":17,"links":3,"tandem":0,"ta":"copy1","tb":"copy2"},{"a":"East 1","i":61,"b":"West 1","j":33,"len":17,"links":3,"tandem":0,"ta":"copy2","tb":"copy1"},{"a":"East 1","i":61,"b":"West 1","j":63,"len":17,"links":3,"tandem":0,"ta":"copy2","tb":"copy2"},{"a":"East 1","i":61,"b":"East 2","j":38,"len":17,"links":3,"tandem":0,"ta":"copy2","tb":"copy1"},{"a":"East 1","i":61,"b":"East 2","j":73,"len":17,"links":3,"tandem":0,"ta":"copy2","tb":"copy2"},{"a":"West 1","i":33,"b":"East 2","j":38,"len":24,"links":5,"tandem":0,"ta":"copy1","tb":"copy1"},{"a":"West 1","i":33,"b":"East 2","j":73,"len":24,"links":5,"tandem":0,"ta":"copy1","tb":"copy2"},{"a":"West 1","i":63,"b":"East 2","j":38,"len":24,"links":5,"tandem":0,"ta":"copy2","tb":"copy1"},{"a":"West 1","i":63,"b":"East 2","j":73,"len":24,"links":5,"tandem":0,"ta":"copy2","tb":"copy2"}],"refrainStats":{"regions":[{"msg":"East 1","start":33,"period":28,"isoLen":26,"links":3,"identity":0,"copy1":[33,60],"copy2":[61,88],"regionEnd":88,"msgLen":99,"skeleton":[[7,14],[9,12],[11,15]],"verified":26},{"msg":"West 1","start":33,"period":30,"isoLen":33,"links":6,"identity":0,"copy1":[33,62],"copy2":[63,92],"regionEnd":92,"msgLen":103,"skeleton":[[1,18],[7,14],[8,17],[9,12],[11,15],[21,26]],"verified":30},{"msg":"East 2","start":38,"period":35,"isoLen":27,"links":6,"identity":0,"copy1":[38,72],"copy2":[73,107],"regionEnd":107,"msgLen":118,"skeleton":[[1,18],[7,14],[8,17],[9,12],[11,15],[19,24]],"verified":27}],"shared":{"all3":[[7,14],[9,12],[11,15]],"w1e2":[[1,18],[7,14],[8,17],[9,12],[11,15]]},"gap4":{"full":4.22,"exRefrain":3.44,"inside":6,"total":26}}}</script>
+<script>
+const D = JSON.parse(document.getElementById('d').textContent);
+const NAMES = D.names;
+const MSG = D.messages;
+const $ = id => document.getElementById(id);
+const el = (t, c, h) => {
+  const e = document.createElement(t);
+  if (c) e.className = c;
+  if (h !== undefined) e.textContent = h;
+  return e;
+};
+
+const EYE = ['C', 'U', 'R', 'D', 'L'];
+const trig = v => {
+  const a = (v / 25) | 0, b = ((v / 5) | 0) % 5, c = v % 5;
+  return `${v} · ${a}${b}${c} ${EYE[a]}${EYE[b]}${EYE[c]}`;
+};
+
+/* ---- unpack compact isomorph pack from find_isomorphs.py ----
+   Compact: {"n":[names],"iso":{"perfect":[[ai,bi,i,j,len,links],...],...}}
+   Also accepts legacy verbose arrays on D.perfect / D.arithmetic / etc.
+*/
+const ISO_KIND_META = {
+  perfect:    { label: 'Perfect',    extras: ['links'],           filters: ['family', 'scope', 'len', 'links', 'trimEdges', 'sort'],
+    desc: 'Matching repeat-link skeletons. Hides windows that contain shared identical CT runs (≥2). Link cells colored; dual-color span outline.' },
+  arithmetic: { label: 'Arithmetic', extras: ['delta'],           filters: ['family', 'scope', 'len', 'trimEdges', 'sort'],
+    desc: 'B ≡ A + Δ (mod 83). Constant offset between aligned windows.' },
+  rank:       { label: 'Rank',       extras: [],                  filters: ['family', 'scope', 'len', 'trimEdges', 'sort'],
+    desc: 'Matching weak-order signature. Hides windows that contain shared identical CT runs (≥2).' },
+  imperfect:  { label: 'Imperfect',  extras: ['links', 'mm'],     filters: ['family', 'scope', 'len', 'links', 'mmRange', 'trimEdges', 'sort'],
+    desc: 'Near-perfect skeletons with mismatches (red dashed). Windows never end on a gap — a gap into trailing wildcards is kept. Hides windows that contain shared identical CT runs (≥2), same as Perfect.' },
+  refrain:    { label: 'Refrain',    extras: [],                  filters: ['family', 'scope', 'sort'],
+    desc: 'The α-family tandem repeat: one phrase encoded twice back-to-back (E1/W1/E2 only). Tandem rows show the two copies of one message; cross rows link copies between messages. Link cells colored — the two copies share a skeleton but zero glyphs.' },
+};
+const ISO_KINDS = Object.keys(ISO_KIND_META);
+
+function expandIsoRow(kind, t, names) {
+  const [ai, bi, i, j, len, ...rest] = t;
+  const row = {
+    id: `${kind}|${names[ai]}|${names[bi]}|${i}|${j}`,
+    kind, a: names[ai], b: names[bi], i, j, len,
+  };
+  (ISO_KIND_META[kind].extras || []).forEach((key, idx) => { row[key] = rest[idx]; });
+  return row;
+}
+
+function loadIsoBuckets(D) {
+  const buckets = {};
+  ISO_KINDS.forEach(k => { buckets[k] = []; });
+
+  // compact pack
+  if (D.iso && typeof D.iso === 'object') {
+    const names = D.n || D.names;
+    for (const kind of ISO_KINDS) {
+      const rows = D.iso[kind];
+      if (!rows || !rows.length) continue;
+      buckets[kind] = rows.map(t => expandIsoRow(kind, t, names));
+    }
+  }
+
+  // legacy verbose object arrays (override/fill if present)
+  for (const kind of ISO_KINDS) {
+    const raw = D[kind];
+    if (!Array.isArray(raw) || !raw.length) continue;
+    if (typeof raw[0] !== 'object' || Array.isArray(raw[0])) continue;
+    buckets[kind] = raw.map(r => ({
+      ...r,
+      kind,
+      id: r.id || `${kind}|${r.a}|${r.b}|${r.i}|${r.j}`,
+    }));
+  }
+  return buckets;
+}
+
+const ISO_DATA = loadIsoBuckets(D);
+
+/* ---- derived pattern indexes ---- */
+/** Shift-0 identical runs between message pairs, length ≥ minLen. */
+function findIdenticalPassages(minLen = 2) {
+  const out = [];
+  for (let i = 0; i < NAMES.length; i++) {
+    for (let j = i + 1; j < NAMES.length; j++) {
+      const a = NAMES[i], b = NAMES[j];
+      const A = MSG[a], B = MSG[b];
+      const m = Math.min(A.length, B.length);
+      let p = 0;
+      while (p < m) {
+        if (A[p] !== B[p]) { p++; continue; }
+        let q = p + 1;
+        while (q < m && A[q] === B[q]) q++;
+        const len = q - p;
+        if (len >= minLen) out.push({ id: `id|${a}|${b}|${p}`, a, b, i: p, j: p, len, mm: [] });
+        p = q;
+      }
+    }
+  }
+  return out.sort((x, y) => y.len - x.len || NAMES.indexOf(x.a) - NAMES.indexOf(y.a) || x.i - y.i);
+}
+
+function findAllRepeatGaps(maxGap = 20) {
+  const out = [];
+  NAMES.forEach(msg => {
+    const last = {};
+    MSG[msg].forEach((v, i) => {
+      if (last[v] !== undefined) {
+        const gap = i - last[v];
+        if (gap >= 2 && gap <= maxGap) {
+          out.push({ id: `${msg}|${last[v]}|${i}`, msg, v, i0: last[v], i1: i, gap });
+        }
+      }
+      last[v] = i;
+    });
+  });
+  return out.sort((a, b) => a.gap - b.gap || NAMES.indexOf(a.msg) - NAMES.indexOf(b.msg) || a.i0 - b.i0);
+}
+
+function shortName(n) {
+  return (n[0] === 'E' ? 'E' : 'W') + n.slice(-1);
+}
+
+function pairSamePositions(a, b, posMin) {
+  const m = Math.min(MSG[a].length, MSG[b].length);
+  const key = NAMES.indexOf(a) < NAMES.indexOf(b) ? a + '|' + b : b + '|' + a;
+  const covered = identicalCover.get(key) || new Set();
+  const hits = [];
+  for (let i = posMin; i < m; i++) {
+    if (covered.has(i)) continue;
+    if (MSG[a][i] === MSG[b][i]) hits.push({ pos: i, v: MSG[a][i] });
+  }
+  return hits;
+}
+
+function buildPairAnalyses(posMin) {
+  const out = [];
+  for (let i = 0; i < NAMES.length; i++) {
+    for (let j = i + 1; j < NAMES.length; j++) {
+      const a = NAMES[i], b = NAMES[j];
+      const hits = pairSamePositions(a, b, posMin);
+      out.push({
+        id: `pair|${a}|${b}`,
+        a, b,
+        label: `${shortName(a)}↔${shortName(b)}`,
+        count: hits.length,
+        hits,
+      });
+    }
+  }
+  return out.sort((x, y) => y.count - x.count || NAMES.indexOf(x.a) - NAMES.indexOf(y.a) || NAMES.indexOf(x.b) - NAMES.indexOf(y.b));
+}
+
+const GAP_MAX = 12;
+const ALL_GAPS = findAllRepeatGaps(GAP_MAX);
+const GAP_COUNTS = {};
+for (let g = 2; g <= GAP_MAX; g++) GAP_COUNTS[g] = 0;
+ALL_GAPS.forEach(r => { GAP_COUNTS[r.gap]++; });
+
+const MODES = [
+  ...ISO_KINDS.map(id => ({
+    id,
+    label: ISO_KIND_META[id].label,
+    desc: ISO_KIND_META[id].desc,
+    filters: ISO_KIND_META[id].filters,
+    iso: true,
+  })),
+  {
+    id: 'freq',
+    label: 'Frequency',
+    desc: 'Count of each glyph (0–82). Bars in the list are relative to the max in scope. Click a row to light every occurrence on the grid.',
+    filters: ['family', 'msg', 'freqSort'],
+  },
+  {
+    id: 'samepos',
+    label: 'Same position',
+    desc: 'Aligned same-value positions between a message pair, excluding positions that sit inside identical passages. Click a pair to light those cells.',
+    filters: ['family', 'scope', 'minCount', 'posMin'],
+  },
+  {
+    id: 'offset',
+    label: 'Offset',
+    desc: 'Windowed same-value match: a glyph at position i in message A also appears in B at j with j−i among the toggled offsets (incl. 0). Purple = A-anchor, underlined = B-match. Click a pair to light hits; check the detail line for the actual offsets.',
+    filters: ['family', 'scope', 'minCount', 'posMin', 'offsetToggles'],
+  },
+  {
+    id: 'gaps',
+    label: 'N-Gaps',
+    desc: 'All consecutive same-symbol repeats at the selected gap size. Entering this mode lights every matching pair on the grid at once. Drag the slider (or click a chip) to change the gap. Family filter limits to α / β / γ messages.',
+    filters: ['family', 'msg', 'gapRange', 'gapPos'],
+  },
+  {
+    id: 'trio',
+    label: 'α Trio',
+    desc: 'E1 · W1 · E2. Underlines = identical passages. Olive = self iso, indigo = cross iso; split fill where they overlap. Colored text = link pairs. Hover a cell to ring every related isomorph span (olive/indigo).',
+    filters: ['scope'],
+  },
+  {
+    id: 'families',
+    label: 'Families',
+    desc: 'All 9 messages in order: α = first 3 (E1·W1·E2), β = middle 3 (W2·E3·W3), γ = last 3 (E4·W4·E5). Olive = same-message iso, indigo = cross-message iso within a family; split fill where they overlap. Colored text = link pairs. Hover rings related within-family spans.',
+    filters: ['family', 'scope'],
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    desc: 'Scratchpad + cribs. Type plaintext, click a glyph to lay it on the ciphertext. Cribs and notes save in this browser.',
+    filters: ['family', 'msg'],
+  },
+];
+
+function isIsoMode(m) {
+  return !!(ISO_KIND_META[m]);
+}
+
+let mode = 'notes';
+let visibleMsgs = new Set(); // which message grids to show; populated at init
+let sel = null;
+let pin = new Set(); // set of "m|i" keys — individually selected cells (multi-select)
+let hov = null; // {m, i, v} or null
+let showIdent = true;
+
+/* ---- notes / cribs (localStorage) ---- */
+const NOTES_KEY = 'eyes-notes-v1';
+let notesText = '';
+let cribs = []; // {id, msg, i, text}
+let cribDraft = '';
+let cribSel = null; // id or null
+let cribPlaceArmed = false;
+
+function loadNotes() {
+  try {
+    const raw = localStorage.getItem(NOTES_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    notesText = o.notes || '';
+    cribs = Array.isArray(o.cribs) ? o.cribs : [];
+  } catch (_) { /* ignore corrupt */ }
+}
+function saveNotes() {
+  try {
+    localStorage.setItem(NOTES_KEY, JSON.stringify({ notes: notesText, cribs }));
+  } catch (_) { /* file:// / quota — keep in-memory */ }
+}
+loadNotes();
+
+function cribMap() {
+  // last crib wins on overlap
+  const map = new Map();
+  cribs.forEach(c => {
+    for (let k = 0; k < c.text.length; k++) {
+      const ch = c.text[k];
+      if (ch === ' ') continue;
+      map.set(c.msg + '\0' + (c.i + k), ch);
+    }
+  });
+  return map;
+}
+
+function placeCrib(msg, i, text) {
+  const t = (text || '').replace(/\s+/g, '');
+  if (!t || !MSG[msg] || i < 0 || i >= MSG[msg].length) return;
+  const clipped = t.slice(0, MSG[msg].length - i);
+  const id = `crib|${msg}|${i}|${Date.now()}`;
+  cribs.push({ id, msg, i, text: clipped });
+  cribSel = id;
+  saveNotes();
+}
+
+function deleteCrib(id) {
+  cribs = cribs.filter(c => c.id !== id);
+  if (cribSel === id) cribSel = null;
+  saveNotes();
+}
+
+const LINK_COLORS = [
+  ['#1A3A3A', '#4FB3C4', '#B8E8F0'],
+  ['#3A2A14', '#E08A3C', '#FFD2A8'],
+  ['#2A2240', '#9B7EDE', '#E8DEFF'],
+  ['#1E2E22', '#5FBF7F', '#C8F0D4'],
+  ['#3A1E28', '#E05A85', '#FFC8D8'],
+  ['#2A3020', '#A8C44F', '#E8F5B0'],
+  ['#1E2840', '#5A8AE0', '#C8DAFF'],
+  ['#3A2818', '#C49A4F', '#FFE0A8'],
+];
+function linkColor(idx) {
+  return LINK_COLORS[idx % LINK_COLORS.length];
+}
+
+/** Column count for a message's cell row (wrap26 or measured). */
+function cellCols(msg) {
+  if (wrap26) return 26;
+  const cells = document.querySelector(`#grid .c[data-m="${CSS.escape(msg)}"]`)?.parentElement;
+  if (!cells) return MSG[msg].length;
+  const w = cells.clientWidth;
+  const cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-w')) || 26;
+  return Math.max(1, Math.floor((w + 1) / (cw + 1)));
+}
+
+/** Paint both isomorph spans; overlap cells keep both outline colors.
+ *  optTrim: { lo, hi } relative offsets — only outline that sub-window. */
+function paintIsoBoxes(sel, optTrim) {
+  const root = getComputedStyle(document.documentElement);
+  const colA = root.getPropertyValue('--east').trim() || '#E08A3C';
+  const colB = root.getPropertyValue('--west').trim() || '#4FB3C4';
+  const lo = optTrim ? optTrim.lo : 0;
+  const hi = optTrim ? optTrim.hi : sel.len - 1;
+  const map = new Map();
+
+  function touch(msg, i) {
+    const key = msg + '\0' + i;
+    if (!map.has(key)) map.set(key, { msg, i, t: [], b: [], l: [], r: [], inA: false, inB: false });
+    return map.get(key);
+  }
+
+  function collect(msg, absStart, color, which) {
+    const start = absStart + lo;
+    const end = absStart + hi; // inclusive
+    const cols = cellCols(msg);
+    const inSpan = j => j >= start && j <= end;
+    for (let i = start; i <= end; i++) {
+      const e = touch(msg, i);
+      if (which === 'a') e.inA = true; else e.inB = true;
+      const col = i % cols;
+      if (!inSpan(i - cols)) e.t.push(color);
+      if (!inSpan(i + cols)) e.b.push(color);
+      if (col === 0 || !inSpan(i - 1)) e.l.push(color);
+      if (col === cols - 1 || !inSpan(i + 1)) e.r.push(color);
+    }
+  }
+
+  collect(sel.a, sel.i, colA, 'a');
+  collect(sel.b, sel.j, colB, 'b');
+
+  const sideShadow = (side, colors) => {
+    const offs = [2, 4];
+    return colors.map((c, n) => {
+      const d = offs[n] || 2 + n * 2;
+      if (side === 't') return `0 -${d}px 0 0 ${c}`;
+      if (side === 'b') return `0 ${d}px 0 0 ${c}`;
+      if (side === 'l') return `-${d}px 0 0 0 ${c}`;
+      return `${d}px 0 0 0 ${c}`;
+    });
+  };
+
+  for (const e of map.values()) {
+    const c = document.querySelector(`#grid .c[data-m="${CSS.escape(e.msg)}"][data-i="${e.i}"]`);
+    if (!c) continue;
+    c.classList.add('isoBox');
+    const sh = [
+      ...sideShadow('t', e.t),
+      ...sideShadow('b', e.b),
+      ...sideShadow('l', e.l),
+      ...sideShadow('r', e.r),
+    ];
+    if (e.inA && e.inB) {
+      sh.push(`inset 0 2px 0 0 ${colA}`, `inset 0 -2px 0 0 ${colB}`);
+      c.classList.add('isoOverlap');
+    }
+    if (sh.length) c.style.boxShadow = sh.join(',');
+  }
+}
+
+/** Offsets in window that participate in a repeat → color-group index. */
+function isoLinkGroups(s, seqA) {
+  const seq = seqA || MSG[s.a].slice(s.i, s.i + s.len);
+  const pos = new Map();
+  seq.forEach((v, k) => {
+    if (!pos.has(v)) pos.set(v, []);
+    pos.get(v).push(k);
+  });
+  const offToGroup = new Map();
+  let g = 0;
+  for (const offs of pos.values()) {
+    if (offs.length < 2) continue;
+    offs.forEach(k => offToGroup.set(k, g));
+    g++;
+  }
+  return offToGroup;
+}
+
+/** Offsets where the two windows' prev-distance (repeat skeleton) disagree. */
+function isoMismatchOffsets(s) {
+  const A = MSG[s.a], B = MSG[s.b];
+  const lastA = Object.create(null), lastB = Object.create(null);
+  const outs = [];
+  for (let L = 0; L < s.len; L++) {
+    const va = A[s.i + L], vb = B[s.j + L];
+    const da = va in lastA ? L - lastA[va] : 0;
+    const db = vb in lastB ? L - lastB[vb] : 0;
+    if (da !== db) outs.push(L);
+    lastA[va] = L;
+    lastB[vb] = L;
+  }
+  return outs;
+}
+
+/**
+ * Relative [lo, hi] covering meaningful cells for trim-empty-edges.
+ * Perfect/rank: value-repeat (link) participants.
+ * Imperfect: skeleton gaps AND agreeing repeat-links (both sides match).
+ *   Gaps must be included or trim will clip them before paint.
+ * → [.....A....A..] becomes [A....A]; imperfect also keeps gap cells.
+ */
+function isoContentRange(s) {
+  let lo = Infinity, hi = -Infinity;
+  const mark = off => {
+    if (off < 0 || off >= s.len) return;
+    lo = Math.min(lo, off);
+    hi = Math.max(hi, off);
+  };
+
+  const imperfect = mode === 'imperfect' || s.kind === 'imperfect' || ((s.mm | 0) > 0);
+
+  if (imperfect) {
+    // 1) gaps always count as content (otherwise trim hides them)
+    isoMismatchOffsets(s).forEach(mark);
+
+    // 2) agreeing links: prev-distance matches on both sides and is a repeat
+    const A = MSG[s.a], B = MSG[s.b];
+    const lastA = Object.create(null), lastB = Object.create(null);
+    for (let L = 0; L < s.len; L++) {
+      const va = A[s.i + L], vb = B[s.j + L];
+      const da = va in lastA ? L - lastA[va] : 0;
+      const db = vb in lastB ? L - lastB[vb] : 0;
+      if (da === db && da > 0) {
+        mark(L);
+        mark(L - da);
+      }
+      lastA[va] = L;
+      lastB[vb] = L;
+    }
+  } else {
+    // perfect / rank / etc.: repeats inside span A (same offsets on B when perfect)
+    const seq = MSG[s.a].slice(s.i, s.i + s.len);
+    const pos = new Map();
+    seq.forEach((v, k) => {
+      if (!pos.has(v)) pos.set(v, []);
+      pos.get(v).push(k);
+    });
+    for (const offs of pos.values()) {
+      if (offs.length < 2) continue;
+      offs.forEach(mark);
+    }
+  }
+
+  if (lo === Infinity) return { lo: 0, hi: s.len - 1, trimmed: false };
+  return { lo, hi, trimmed: lo > 0 || hi < s.len - 1 };
+}
+
+let wrap26 = true;
+
+const IDENTICAL = findIdenticalPassages(2);
+
+/** Positions covered by identical passages, keyed by "A|B" (canonical name order). */
+const identicalCover = new Map();
+IDENTICAL.forEach(r => {
+  const key = NAMES.indexOf(r.a) < NAMES.indexOf(r.b) ? r.a + '|' + r.b : r.b + '|' + r.a;
+  if (!identicalCover.has(key)) identicalCover.set(key, new Set());
+  const set = identicalCover.get(key);
+  for (let k = 0; k < r.len; k++) set.add(r.i + k);
+});
+
+/* Header families by message order: α = first 3, β = middle 3, γ = last 3 */
+const MSG_FAM = {
+  'East 1': 'a', 'West 1': 'a', 'East 2': 'a',
+  'West 2': 'b', 'East 3': 'b', 'West 3': 'b',
+  'East 4': 'g', 'West 4': 'g', 'East 5': 'g',
+};
+
+/* Per-cell family for identical-passage underline (message's own family) */
+const identFam = {};
+NAMES.forEach(n => identFam[n] = new Array(MSG[n].length).fill(null));
+IDENTICAL.forEach(r => {
+  const fa = MSG_FAM[r.a], fb = MSG_FAM[r.b];
+  for (let k = 0; k < r.len; k++) {
+    if (fa) identFam[r.a][r.i + k] = fa;
+    if (fb) identFam[r.b][r.j + k] = fb;
+  }
+});
+
+/* ---- family views (α·β·γ): identical passages + within-family perfect isos ---- */
+const TRIO_MSGS = ['East 1', 'West 1', 'East 2'];
+const FAM_LABEL = { a: 'α', b: 'β', g: 'γ' };
+const FAM_MSGS = {};
+NAMES.forEach(n => { const f = MSG_FAM[n]; if (f) (FAM_MSGS[f] = FAM_MSGS[f] || []).push(n); });
+
+/** Within-family perfect isomorphs (self + cross). Skips verbatim identical runs.
+ *  restrict: optional list of message names to keep. */
+function familyIsos(restrict) {
+  return (ISO_DATA.perfect || [])
+    .filter(x => MSG_FAM[x.a] && MSG_FAM[x.a] === MSG_FAM[x.b])
+    .filter(x => !restrict || (restrict.includes(x.a) && restrict.includes(x.b)))
+    .filter(x => !hasAlignedIdenticalRun(x, 2))
+    .sort((a, b) =>
+      NAMES.indexOf(a.a) - NAMES.indexOf(b.a) ||
+      (a.a === a.b ? 0 : 1) - (b.a === b.b ? 0 : 1) ||
+      NAMES.indexOf(a.b) - NAMES.indexOf(b.b) ||
+      a.i - b.i || b.len - a.len
+    );
+}
+const trioIsos = () => familyIsos(TRIO_MSGS);
+
+const filterState = {
+  scope: 'all', family: 'all', len: 4, links: 2, sort: 'links',
+  mmMin: 1, mmMax: 10,
+  trimEdges: false,
+  minCount: 1, posMin: 1, offsets: new Set([-1, 1]), msg: 'all',
+  gap: 4,
+  gapPosLo: 0,
+  gapPosHi: 200, // clamped to MSG_POS_MAX at init
+  freqSort: 'count', // 'value' | 'count'
+};
+
+const MSG_POS_MAX = Math.max(0, ...NAMES.map(n => MSG[n].length - 1));
+filterState.gapPosHi = MSG_POS_MAX;
+
+/** Pair modes (samepos/offset): scope means within/cross family, not same/cross message. */
+function isPairMode(m = mode) {
+  return m === 'samepos' || m === 'offset';
+}
+
+/** Shared family + scope gate for anything keyed by two messages a,b. */
+function passesFamScope(a, b) {
+  const { family, scope } = filterState;
+  const fa = MSG_FAM[a], fb = MSG_FAM[b];
+  if (family !== 'all' && (fa !== family || fb !== family)) return false;
+  if (isPairMode()) {
+    if (scope === 'within' && fa !== fb) return false;
+    if (scope === 'cross' && fa === fb) return false;
+  } else {
+    if (scope === 'cross' && a === b) return false;
+    if (scope === 'within' && a !== b) return false;
+  }
+  return true;
+}
+
+/** Single-message family/msg gate (gaps, notes, freq). */
+function passesMsgFilters(msg) {
+  if (filterState.family !== 'all' && MSG_FAM[msg] !== filterState.family) return false;
+  if (filterState.msg !== 'all' && msg !== filterState.msg) return false;
+  return true;
+}
+
+function totalGlyphs() {
+  return NAMES.reduce((s, n) => s + MSG[n].length, 0);
+}
+
+/** True if the two windows share an aligned identical run (same values at same relative offsets). */
+function hasAlignedIdenticalRun(s, minRun = 2) {
+  const A = MSG[s.a], B = MSG[s.b];
+  let run = 0;
+  for (let k = 0; k < s.len; k++) {
+    if (A[s.i + k] === B[s.j + k]) {
+      run++;
+      if (run >= minRun) return true;
+    } else {
+      run = 0;
+    }
+  }
+  return false;
+}
+
+function isoRows() {
+  const { len, links, sort, mmMin, mmMax } = filterState;
+  let rows = (ISO_DATA[mode] || []).slice().filter(x => passesFamScope(x.a, x.b));
+  const needsLinks = mode === 'perfect' || mode === 'imperfect';
+  rows = rows.filter(x => x.len >= len && (!needsLinks || (x.links || 0) >= links));
+  // perfect / imperfect / rank: skip windows that contain shared identical CT stretches
+  if (mode === 'perfect' || mode === 'imperfect' || mode === 'rank') {
+    rows = rows.filter(x => !hasAlignedIdenticalRun(x, 2));
+  }
+  if (mode === 'imperfect') {
+    rows = rows.filter(x => {
+      const mm = x.mm || 0;
+      return mm >= mmMin && mm <= mmMax;
+    });
+  }
+  rows.sort(
+    sort === 'len' ? (a, b) => b.len - a.len || (b.links || 0) - (a.links || 0)
+      : sort === 'pos' ? (a, b) => NAMES.indexOf(a.a) - NAMES.indexOf(b.a) || a.i - b.i
+      : sort === 'mm' ? (a, b) => (a.mm || 0) - (b.mm || 0) || b.len - a.len
+        : (a, b) => (b.links || b.len) - (a.links || a.len) || b.len - a.len
+  );
+  // refrain: keep the three tandem regions at the top regardless of sort —
+  // they are the finding; cross rows are corroboration.
+  if (mode === 'refrain') {
+    rows.sort((a, b) => (b.tandem || 0) - (a.tandem || 0));
+  }
+  return rows;
+}
+
+function samePosRows() {
+  const { minCount, posMin } = filterState;
+  return buildPairAnalyses(posMin)
+    .filter(r => passesFamScope(r.a, r.b) && r.count >= minCount);
+}
+
+const OFFSET_CHOICES = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+
+function fmtOff(o) { return (o > 0 ? '+' : '') + o; }
+
+function selectedOffsets() {
+  return [...filterState.offsets].sort((a, b) => a - b);
+}
+
+function formatOffsets(offs = selectedOffsets()) {
+  if (!offs.length) return '∅';
+  if (offs.length === 1) return fmtOff(offs[0]);
+  let run = true;
+  for (let i = 1; i < offs.length; i++) {
+    if (offs[i] !== offs[i - 1] + 1) { run = false; break; }
+  }
+  if (run) return `${fmtOff(offs[0])}…${fmtOff(offs[offs.length - 1])}`;
+  return offs.map(fmtOff).join(',');
+}
+
+/** Windowed same-value hits: value at i in A found in B at j where j−i is in offsets. */
+function pairOffsetHits(a, b, posMin, offsets) {
+  const A = MSG[a], B = MSG[b];
+  const key = NAMES.indexOf(a) < NAMES.indexOf(b) ? a + '|' + b : b + '|' + a;
+  const covered = identicalCover.get(key) || new Set();
+  const hits = [];
+  for (let i = posMin; i < A.length; i++) {
+    const val = A[i];
+    for (const off of offsets) {
+      const j = i + off;
+      if (j < posMin || j >= B.length) continue;
+      if (B[j] !== val) continue;
+      if (off === 0 && covered.has(i)) continue; // exact matches in shared runs belong to Same-position
+      hits.push({ posA: i, posB: j, off, v: val });
+    }
+  }
+  return hits;
+}
+
+function offsetRows() {
+  const { minCount, posMin } = filterState;
+  const offsets = selectedOffsets();
+  const out = [];
+  for (let i = 0; i < NAMES.length; i++) {
+    for (let j = i + 1; j < NAMES.length; j++) {
+      const a = NAMES[i], b = NAMES[j];
+      if (!passesFamScope(a, b)) continue;
+      const hits = pairOffsetHits(a, b, posMin, offsets);
+      out.push({ id: `off|${a}|${b}`, a, b, label: `${shortName(a)}↔${shortName(b)}`, count: hits.length, hits });
+    }
+  }
+  return out.filter(r => r.count >= minCount)
+    .sort((x, y) => y.count - x.count || NAMES.indexOf(x.a) - NAMES.indexOf(y.a) || NAMES.indexOf(x.b) - NAMES.indexOf(y.b));
+}
+
+function gapRows() {
+  const { gap, gapPosLo, gapPosHi } = filterState;
+  const lo = Math.min(gapPosLo, gapPosHi);
+  const hi = Math.max(gapPosLo, gapPosHi);
+  return ALL_GAPS.filter(r =>
+    r.gap === gap &&
+    passesMsgFilters(r.msg) &&
+    r.i0 >= lo && r.i1 <= hi
+  );
+}
+
+function famViewRows(restrict) {
+  // trio is α-fixed: only scope applies (family sticky from other tabs would empty it)
+  if (mode === 'trio') {
+    const { scope } = filterState;
+    return familyIsos(restrict).filter(x => {
+      if (scope === 'cross' && x.a === x.b) return false;
+      if (scope === 'within' && x.a !== x.b) return false;
+      return true;
+    });
+  }
+  return familyIsos(restrict).filter(x => passesFamScope(x.a, x.b));
+}
+
+function notesRows() {
+  return cribs.filter(c => passesMsgFilters(c.msg))
+    .sort((a, b) => NAMES.indexOf(a.msg) - NAMES.indexOf(b.msg) || a.i - b.i);
+}
+
+/** Gap-size histogram, optionally restricted to a family. */
+function gapCounts(family) {
+  const counts = {};
+  for (let g = 2; g <= GAP_MAX; g++) counts[g] = 0;
+  ALL_GAPS.forEach(r => {
+    if (family && family !== 'all' && MSG_FAM[r.msg] !== family) return;
+    if (r.gap >= 2 && r.gap <= GAP_MAX) counts[r.gap]++;
+  });
+  return counts;
+}
+
+/** Messages in the current frequency scope (family / message filters). */
+function freqScopeMessages() {
+  let msgs = NAMES;
+  if (filterState.family !== 'all') msgs = msgs.filter(n => MSG_FAM[n] === filterState.family);
+  if (filterState.msg !== 'all') msgs = msgs.filter(n => n === filterState.msg);
+  return msgs;
+}
+
+/** Per-glyph-value (0–82) counts over the current scope. */
+function freqRows() {
+  const msgs = freqScopeMessages();
+  const counts = new Array(83).fill(0);
+  let total = 0;
+  msgs.forEach(n => (MSG[n] || []).forEach(v => { if (v >= 0 && v < 83) { counts[v]++; total++; } }));
+  const rows = counts.map((count, v) => ({
+    id: `freq|${v}`, v, count, pct: total ? (count / total * 100) : 0,
+  }));
+  const maxCount = Math.max(1, ...counts);
+  rows.sort(filterState.freqSort === 'count'
+    ? (a, b) => b.count - a.count || a.v - b.v
+    : (a, b) => a.v - b.v);
+  return { rows, total, msgs, maxCount };
+}
+
+function refreshSel() {
+  if (!sel || !sel.id) return;
+  const rows = currentRows();
+  const next = rows.find(r => r.id === sel.id);
+  sel = next || null;
+}
+
+function currentRows() {
+  if (mode === 'freq') return freqRows().rows;
+  if (mode === 'samepos') return samePosRows();
+  if (mode === 'offset') return offsetRows();
+  if (mode === 'gaps') return gapRows();
+  if (mode === 'trio') return famViewRows(TRIO_MSGS);
+  if (mode === 'families') return famViewRows(null);
+  if (mode === 'notes') return notesRows();
+  if (isIsoMode(mode)) return isoRows();
+  return [];
+}
+
+function modeMeta() {
+  return MODES.find(m => m.id === mode);
+}
+
+function setGap(g) {
+  filterState.gap = Math.max(2, Math.min(GAP_MAX, g | 0));
+}
+
+function buildModes() {
+  const box = $('modes');
+  box.innerHTML = '';
+  MODES.forEach(m => {
+    const b = el('button', 'modebtn' + (mode === m.id ? ' on' : ''), m.label);
+    b.onclick = () => {
+      mode = m.id;
+      sel = null;
+      buildModes();
+      buildFilters();
+      drawList();
+      paint();
+      updateDetail();
+      updateCounts();
+    };
+    box.append(b);
+  });
+}
+
+function buildFilters() {
+  const box = $('filters');
+  const meta = modeMeta();
+  box.innerHTML = '';
+  box.className = 'filters' + (meta.filters.includes('gapRange') ? ' col' : '');
+  if (!meta.filters.length) {
+    box.classList.add('hidden');
+    return;
+  }
+  box.classList.remove('hidden');
+
+  const add = (label, node) => {
+    const w = el('div', 'ctl');
+    w.append(el('span', '', label), node);
+    box.append(w);
+  };
+
+  // Shared filters first (sticky across tabs), then mode-specific controls.
+  if (meta.filters.includes('family')) {
+    const s = el('select');
+    [['all', 'all families'], ['a', 'α (E1·W1·E2)'], ['b', 'β (W2·E3·W3)'], ['g', 'γ (E4·W4·E5)']]
+      .forEach(([v, t]) => s.append(new Option(t, v)));
+    s.value = filterState.family;
+    s.oninput = () => {
+      filterState.family = s.value;
+      // drop message pick if it's outside the new family
+      if (filterState.msg !== 'all' && MSG_FAM[filterState.msg] !== filterState.family
+          && filterState.family !== 'all') {
+        filterState.msg = 'all';
+      }
+      refreshSel();
+      buildFilters();
+      drawList();
+      paint();
+      updateDetail();
+      updateCounts();
+    };
+    add('family', s);
+  }
+  if (meta.filters.includes('scope')) {
+    const s = el('select');
+    const opts = isPairMode()
+      ? [['all', 'all pairs'], ['within', 'within family'], ['cross', 'cross family']]
+      : [['all', 'all'], ['cross', 'cross-message'], ['within', 'same message']];
+    opts.forEach(([v, t]) => s.append(new Option(t, v)));
+    s.value = filterState.scope;
+    s.oninput = () => {
+      filterState.scope = s.value;
+      refreshSel();
+      drawList(); paint(); updateDetail();
+    };
+    add('scope', s);
+  }
+  if (meta.filters.includes('msg')) {
+    const s = el('select');
+    s.append(new Option('all messages', 'all'));
+    const opts = filterState.family === 'all'
+      ? NAMES
+      : NAMES.filter(n => MSG_FAM[n] === filterState.family);
+    opts.forEach(n => s.append(new Option(n, n)));
+    s.value = opts.includes(filterState.msg) || filterState.msg === 'all'
+      ? filterState.msg
+      : 'all';
+    if (s.value !== filterState.msg) filterState.msg = s.value;
+    s.oninput = () => { filterState.msg = s.value; drawList(); paint(); updateDetail(); updateCounts(); };
+    add('message', s);
+  }
+  if (meta.filters.includes('gapRange')) {
+    const wrap = el('div', 'rangewrap');
+    const labels = el('div', 'rangelabels');
+    labels.innerHTML = `<span>gap <b id="gapRangeLabel">${filterState.gap}</b></span><span id="gapCountLabel">${gapRows().length} pairs</span>`;
+    wrap.append(labels);
+
+    const r = document.createElement('input');
+    r.type = 'range';
+    r.className = 'singlerange';
+    r.id = 'gapSlider';
+    r.min = 2;
+    r.max = GAP_MAX;
+    r.step = 1;
+    r.value = filterState.gap;
+    wrap.append(r);
+
+    const chips = el('div', 'gapstats');
+    const counts = gapCounts(filterState.family);
+    for (let g = 2; g <= GAP_MAX; g++) {
+      const chip = el('span', 'gapchip' + (g === filterState.gap ? ' on' : ''));
+      chip.innerHTML = `${g}: <b>${counts[g] || 0}</b>`;
+      chip.title = `Show gap ${g}`;
+      chip.style.cursor = 'pointer';
+      chip.onclick = () => {
+        setGap(g);
+        buildFilters();
+        drawList();
+        paint();
+        updateDetail();
+        updateCounts();
+      };
+      chips.append(chip);
+    }
+    wrap.append(chips);
+    box.append(wrap);
+
+    r.oninput = () => {
+      setGap(+r.value);
+      const lab = $('gapRangeLabel');
+      if (lab) lab.textContent = String(filterState.gap);
+      const cnt = $('gapCountLabel');
+      if (cnt) cnt.textContent = `${gapRows().length} pairs`;
+      chips.querySelectorAll('.gapchip').forEach((chip, idx) => {
+        chip.classList.toggle('on', idx + 2 === filterState.gap);
+      });
+      drawList();
+      paint();
+      updateDetail();
+      updateCounts();
+    };
+  }
+  if (meta.filters.includes('gapPos')) {
+    const wrap = el('div', 'rangewrap');
+    const labels = el('div', 'rangelabels');
+    labels.innerHTML =
+      `<span>pos <b id="gapPosLoLab">${filterState.gapPosLo}</b>–<b id="gapPosHiLab">${filterState.gapPosHi}</b></span>` +
+      `<span id="gapPosCountLab">${gapRows().length} pairs</span>`;
+    wrap.append(labels);
+
+    const dual = el('div', 'dualrange');
+    const track = el('div', 'dualtrack');
+    const fill = el('div', 'dualfill');
+    dual.append(track, fill);
+
+    const mk = (which) => {
+      const r = document.createElement('input');
+      r.type = 'range';
+      r.min = 0;
+      r.max = MSG_POS_MAX;
+      r.step = 1;
+      r.value = which === 'lo' ? filterState.gapPosLo : filterState.gapPosHi;
+      r.oninput = () => {
+        let lo = +$('gapPosLo').value;
+        let hi = +$('gapPosHi').value;
+        if (which === 'lo' && lo > hi) { hi = lo; $('gapPosHi').value = hi; }
+        if (which === 'hi' && hi < lo) { lo = hi; $('gapPosLo').value = lo; }
+        filterState.gapPosLo = lo;
+        filterState.gapPosHi = hi;
+        const loLab = $('gapPosLoLab');
+        const hiLab = $('gapPosHiLab');
+        const cnt = $('gapPosCountLab');
+        const gcnt = $('gapCountLabel');
+        if (loLab) loLab.textContent = String(lo);
+        if (hiLab) hiLab.textContent = String(hi);
+        if (cnt) cnt.textContent = `${gapRows().length} pairs`;
+        if (gcnt) gcnt.textContent = `${gapRows().length} pairs`;
+        const pct = v => (v / MSG_POS_MAX) * 100;
+        fill.style.left = pct(lo) + '%';
+        fill.style.width = Math.max(0, pct(hi) - pct(lo)) + '%';
+        refreshSel();
+        drawList(); paint(); updateDetail(); updateCounts();
+      };
+      r.id = which === 'lo' ? 'gapPosLo' : 'gapPosHi';
+      return r;
+    };
+    dual.append(mk('lo'), mk('hi'));
+    wrap.append(dual);
+    // init fill
+    {
+      const pct = v => (v / MSG_POS_MAX) * 100;
+      fill.style.left = pct(filterState.gapPosLo) + '%';
+      fill.style.width = Math.max(0, pct(filterState.gapPosHi) - pct(filterState.gapPosLo)) + '%';
+    }
+    box.append(wrap);
+  }
+  if (meta.filters.includes('len')) {
+    const n = el('input');
+    n.type = 'number';
+    n.min = 1;
+    n.value = filterState.len;
+    n.oninput = () => { filterState.len = +n.value || 1; drawList(); paint(); updateDetail(); };
+    add('min len', n);
+  }
+  if (meta.filters.includes('links')) {
+    const n = el('input');
+    n.type = 'number';
+    n.min = 0;
+    n.value = filterState.links;
+    n.oninput = () => { filterState.links = +n.value || 0; drawList(); paint(); updateDetail(); };
+    add('min links', n);
+  }
+  if (meta.filters.includes('mmRange')) {
+    const lo = el('input');
+    lo.type = 'number';
+    lo.min = 1;
+    lo.value = filterState.mmMin;
+    lo.oninput = () => {
+      filterState.mmMin = Math.max(1, +lo.value || 1);
+      refreshSel();
+      drawList(); paint(); updateDetail();
+    };
+    add('min gaps', lo);
+    const hi = el('input');
+    hi.type = 'number';
+    hi.min = 1;
+    hi.value = filterState.mmMax;
+    hi.oninput = () => {
+      filterState.mmMax = Math.max(1, +hi.value || 1);
+      refreshSel();
+      drawList(); paint(); updateDetail();
+    };
+    add('max gaps', hi);
+  }
+  if (meta.filters.includes('trimEdges')) {
+    const lab = el('label', 'ctl');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = filterState.trimEdges;
+    cb.oninput = () => {
+      filterState.trimEdges = cb.checked;
+      paint();
+      updateDetail();
+      drawList();
+    };
+    lab.append(cb, document.createTextNode(' trim empty head/tail'));
+    lab.title = 'Crop span to first…last link (and imperfect skeleton gaps): [.....A....A..] → [A....A]';
+    box.append(lab);
+  }
+  if (meta.filters.includes('sort')) {
+    const s = el('select');
+    const opts = [['links', 'links'], ['len', 'length'], ['pos', 'position']];
+    if (mode === 'imperfect') opts.push(['mm', 'gaps']);
+    opts.forEach(([v, t]) => s.append(new Option(t, v)));
+    s.value = filterState.sort;
+    s.oninput = () => { filterState.sort = s.value; drawList(); paint(); updateDetail(); };
+    add('sort', s);
+  }
+  if (meta.filters.includes('minCount')) {
+    const n = el('input');
+    n.type = 'number';
+    n.min = 0;
+    n.value = filterState.minCount;
+    n.oninput = () => {
+      filterState.minCount = +n.value || 0;
+      refreshSel();
+      drawList(); paint(); updateDetail();
+    };
+    add('min matches', n);
+  }
+  if (meta.filters.includes('offsetToggles')) {
+    const wrap = el('div', 'offpick');
+    wrap.append(el('span', 'offpicklab', 'offsets:'));
+    OFFSET_CHOICES.forEach(o => {
+      const on = filterState.offsets.has(o);
+      const btn = el('span', 'offtog' + (on ? ' on' : ''), fmtOff(o));
+      btn.title = on ? `Exclude offset ${fmtOff(o)}` : `Include offset ${fmtOff(o)}`;
+      btn.onclick = () => {
+        if (filterState.offsets.has(o)) filterState.offsets.delete(o);
+        else filterState.offsets.add(o);
+        buildFilters();
+        refreshSel();
+        drawList(); paint(); updateDetail();
+      };
+      wrap.append(btn);
+    });
+    box.append(wrap);
+  }
+  if (meta.filters.includes('posMin')) {
+    const n = el('input');
+    n.type = 'number';
+    n.min = 0;
+    n.value = filterState.posMin;
+    n.oninput = () => {
+      filterState.posMin = +n.value || 0;
+      refreshSel();
+      drawList(); paint(); updateDetail();
+    };
+    add('pos ≥', n);
+  }
+  if (meta.filters.includes('freqSort')) {
+    const s = el('select');
+    [['count', 'by count'], ['value', 'by value']].forEach(([v, t]) => s.append(new Option(t, v)));
+    s.value = filterState.freqSort;
+    s.oninput = () => {
+      filterState.freqSort = s.value;
+      refreshSel();
+      drawList();
+      paint();
+      updateDetail();
+    };
+    add('sort', s);
+  }
+}
+
+function drawList() {
+  const L = $('list');
+  L.innerHTML = '';
+  const rows = currentRows();
+  const meta = modeMeta();
+  const freqMax = mode === 'freq' ? freqRows().maxCount : 1;
+
+  $('listdesc').textContent = meta.desc;
+  $('listhead').textContent = `${meta.label} — ${rows.length} shown`;
+
+  if (mode === 'notes') {
+    $('listhead').textContent = `Notes · ${cribs.length} crib${cribs.length === 1 ? '' : 's'}`;
+    const box = el('div', 'notesbox');
+
+    const form = el('div', 'cribform');
+    form.append(el('div', 'cribhint',
+      'Type a letter and click cells to paint (stays sticky). Type a word to paint it letter-by-letter. Clear wipes all cribs.'));
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'cribDraftInput';
+    inp.placeholder = 'letter or word…';
+    inp.value = cribDraft;
+    inp.autocomplete = 'off';
+    const syncArm = () => {
+      const left = cribDraft.replace(/\s+/g, '');
+      const h = $('cribArmHint');
+      if (!h) return;
+      if (!left) { h.textContent = 'Empty — click a cell to highlight it.'; return; }
+      h.textContent = left.length === 1
+        ? `Painting “${left[0]}” — click as many cells as you want.`
+        : `Next: “${left[0]}” · ${left.length} left — click a cell.`;
+    };
+    inp.oninput = () => {
+      cribDraft = inp.value;
+      cribPlaceArmed = !!cribDraft.trim();
+      syncArm();
+    };
+    form.append(inp);
+    const arm = el('div', 'cribhint');
+    arm.id = 'cribArmHint';
+    form.append(arm);
+    syncArm();
+    box.append(form);
+
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Freeform notes…';
+    ta.value = notesText;
+    ta.oninput = () => { notesText = ta.value; saveNotes(); };
+    box.append(ta);
+
+    const list = el('div', 'criblist');
+    const shown = notesRows();
+    if (!cribs.length) {
+      list.append(el('div', 'empty', 'No cribs yet.'));
+    } else if (!shown.length) {
+      list.append(el('div', 'empty', 'No cribs in this family/message filter.'));
+    } else {
+      shown.forEach(c => {
+          const row = el('div', 'cribrow' + (cribSel === c.id ? ' sel' : ''));
+          const left = el('div');
+          left.append(el('div', '', `${shortName(c.msg)}[${c.i}]  ${c.text}`));
+          left.append(el('div', 'meta', `len ${c.text.length}`));
+          const del = el('button', '', '×');
+          del.title = 'Delete crib';
+          del.onclick = e => {
+            e.stopPropagation();
+            deleteCrib(c.id);
+            drawList();
+            paint();
+            updateDetail();
+          };
+          row.append(left, del);
+          row.onclick = () => {
+            cribSel = cribSel === c.id ? null : c.id;
+            drawList();
+            paint();
+            scrollToSel({ a: c.msg, i: c.i });
+          };
+          list.append(row);
+        });
+    }
+    box.append(list);
+    L.append(box);
+    return;
+  }
+
+  if (mode === 'gaps') {
+    // all pairs are already painted on the grid; list is for jump-to / focus
+  }
+
+  if (!rows.length) {
+    const total = isIsoMode(mode) ? (ISO_DATA[mode] || []).length : -1;
+    const msg = total === 0
+      ? `No ${ISO_KIND_META[mode].label} data loaded yet — paste a find_isomorphs.py pack.`
+      : 'Nothing matches these filters.';
+    L.append(el('div', 'empty', msg));
+    return;
+  }
+
+  rows.forEach((x, idx) => {
+    const isSel = sel && (sel.id ? sel.id === x.id : sel === x);
+    const row = el('div', 'row' + (mode === 'freq' ? ' freqrow' : '') + (isSel ? ' sel' : ''));
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+
+    let dotClass = 'perfect';
+    let loc = '';
+    let metaTxt = '';
+    let dotStyle = '';
+
+    if (mode === 'freq') {
+      const a = (x.v / 25) | 0, b2 = ((x.v / 5) | 0) % 5, c = x.v % 5;
+      const lab = el('span', 'loc', `${String(x.v).padStart(2, '0')} · ${EYE[a]}${EYE[b2]}${EYE[c]}`);
+      const barwrap = el('div', 'freqbarwrap');
+      const bar = el('div', 'freqbar');
+      const max = freqMax;
+      bar.style.width = `${(x.count / max * 100).toFixed(1)}%`;
+      barwrap.append(bar);
+      const cnt = el('span', 'meta', String(x.count));
+      row.append(lab, barwrap, cnt);
+      const go = () => {
+        const same = sel && sel.id === x.id;
+        sel = same ? null : x;
+        drawList();
+        paint();
+        updateDetail();
+        if (!same) scrollToSel(x);
+      };
+      row.onclick = go;
+      row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+      L.append(row);
+      return;
+    } else if (mode === 'samepos') {
+      dotClass = 'samepos';
+      dotStyle = `background:var(--west)`;
+      loc = x.label;
+      metaTxt = `${x.count} same`;
+    } else if (mode === 'offset') {
+      dotClass = 'offset';
+      loc = x.label;
+      metaTxt = `${x.count} ${formatOffsets()}`;
+    } else if (mode === 'gaps') {
+      dotClass = 'gap4';
+      loc = `${x.msg}[${x.i0}]…[${x.i1}]`;
+      metaTxt = `${x.v} · gap ${x.gap}`;
+    } else if (mode === 'refrain') {
+      dotClass = 'refrain';
+      loc = x.tandem
+        ? `${shortName(x.a)}  copy1[${x.i}] ~ copy2[${x.j}]`
+        : `${shortName(x.a)}[${x.i}] ~ ${shortName(x.b)}[${x.j}]`;
+      metaTxt = x.tandem
+        ? `period ${x.period} · ${x.links}L`
+        : `cross · ${x.len} · ${x.links}L`;
+    } else if (mode === 'trio' || mode === 'families') {
+      dotClass = 'refrain';
+      const fam = FAM_LABEL[MSG_FAM[x.a]] || '';
+      loc = x.a === x.b
+        ? `${fam} ${shortName(x.a)}[${x.i}] ~ [${x.j}]`
+        : `${fam} ${shortName(x.a)}[${x.i}] ~ ${shortName(x.b)}[${x.j}]`;
+      metaTxt = `${x.a === x.b ? 'self' : 'cross'} · ${x.len} · ${x.links}L`;
+    } else {
+      // isomorph family
+      dotClass = x.kind || mode;
+      loc = `${shortName(x.a)}[${x.i}] ~ ${shortName(x.b)}[${x.j}]`;
+      const bits = [`${x.len}`];
+      if (x.links != null) bits.push(`${x.links}L`);
+      if (x.delta != null) bits.push(`Δ${x.delta}`);
+      if (x.mm != null) bits.push(`${x.mm}mm`);
+      metaTxt = bits.join(' · ');
+    }
+
+    const dot = el('span', 'dot ' + dotClass);
+    if (dotStyle) dot.style.cssText = dotStyle;
+    row.append(dot, el('span', 'loc', loc), el('span', 'meta', metaTxt));
+
+    const go = () => {
+      const same = sel && (sel.id ? sel.id === x.id : sel === x);
+      sel = same ? null : x;
+      drawList();
+      paint();
+      updateDetail();
+      if (!same) scrollToSel(x);
+    };
+    row.onclick = go;
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+    L.append(row);
+  });
+}
+
+function scrollToSel(x) {
+  if (!x) return;
+  let msg, idx;
+  if (mode === 'freq') {
+    // first occurrence of this glyph in scope
+    for (const n of freqScopeMessages()) {
+      const i = MSG[n].indexOf(x.v);
+      if (i >= 0) { msg = n; idx = i; break; }
+    }
+    if (msg == null) return;
+  } else if (mode === 'samepos') {
+    if (!x.hits || !x.hits.length) return;
+    msg = x.a; idx = x.hits[0].pos;
+  }
+  else if (mode === 'offset') {
+    if (!x.hits || !x.hits.length) return;
+    msg = x.a; idx = x.hits[0].posA;
+  }
+  else if (mode === 'gaps') { msg = x.msg; idx = x.i0; }
+  else { msg = x.a; idx = x.i; }
+  const cell = document.querySelector(`#grid .c[data-m="${msg}"][data-i="${idx}"]`);
+  if (cell) cell.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function updateDetail() {
+  const box = $('detail');
+
+  if (mode === 'freq') {
+    const { rows, total, msgs } = freqRows();
+    const nonZero = rows.filter(r => r.count > 0).length;
+    const mean = total / 83;
+    box.classList.add('show');
+    if (!sel) {
+      box.innerHTML =
+        `<b>Frequency</b> — <span class="mono">${total}</span> glyphs · <span class="mono">${nonZero}</span>/83 seen` +
+        ` · mean <span class="mono">${mean.toFixed(2)}</span>` +
+        `<br>Click a bar in the list to light every occurrence of that glyph on the grid.`;
+      return;
+    }
+    box.innerHTML =
+      `<b>Glyph ${sel.v}</b> — <span class="mono">${trig(sel.v)}</span>` +
+      ` · <b>${sel.count}</b>× (<span class="mono">${sel.pct.toFixed(1)}%</span>)` +
+      ` across ${msgs.length} message${msgs.length === 1 ? '' : 's'}` +
+      `<br>All matching cells are lit. Click the row again to clear.`;
+    return;
+  }
+
+  if (mode === 'gaps') {
+    const rows = gapRows();
+    const focus = sel
+      ? `<br>Focus: <b>${sel.msg}</b> symbol <span class="mono">${sel.v}</span> at [${sel.i0}] ↔ [${sel.i1}] (gap ${sel.gap}) — click again to clear focus`
+      : '<br>All matching endpoints are lit. Click a list row to focus one pair.';
+    box.classList.add('show');
+    const posTrim = filterState.gapPosLo > 0 || filterState.gapPosHi < MSG_POS_MAX;
+    box.innerHTML =
+      `<b>N-Gaps</b> — gap <span class="mono">${filterState.gap}</span>` +
+      ` · <b>${rows.length}</b> pairs` +
+      (filterState.msg !== 'all' ? ` · message ${filterState.msg}` : '') +
+      (posTrim ? ` · pos [${filterState.gapPosLo}…${filterState.gapPosHi}]` : '') +
+      focus;
+    return;
+  }
+
+  if (mode === 'samepos') {
+    const rows = samePosRows();
+    box.classList.add('show');
+    if (!sel || !sel.hits) {
+      box.innerHTML =
+        `<b>Same position</b> — ${rows.length} pairs` +
+        (filterState.posMin > 0 ? ` · pos ≥ ${filterState.posMin}` : '') +
+        (filterState.minCount > 0 ? ` · ≥${filterState.minCount} matches` : '') +
+        `<br>Select a pair (e.g. E1↔W1) to highlight its aligned same-value positions.`;
+      return;
+    }
+    const preview = sel.hits.slice(0, 12).map(h => `${h.pos}:${h.v}`).join(' ') + (sel.hits.length > 12 ? ' …' : '');
+    box.innerHTML =
+      `<b>${sel.label}</b> — <span class="mono">${sel.a}</span> ↔ <span class="mono">${sel.b}</span>` +
+      ` · <b>${sel.count}</b> same positions` +
+      (filterState.posMin > 0 ? ` (pos ≥ ${filterState.posMin})` : '') +
+      `<br><span class="mono">${preview || 'none'}</span>`;
+    return;
+  }
+
+  if (mode === 'offset') {
+    const rows = offsetRows();
+    box.classList.add('show');
+    if (!sel || !sel.hits) {
+      box.innerHTML =
+        `<b>Offset</b> — ${rows.length} pairs · offsets ${formatOffsets()}` +
+        (filterState.posMin > 0 ? ` · pos ≥ ${filterState.posMin}` : '') +
+        (filterState.minCount > 0 ? ` · ≥${filterState.minCount} hits` : '') +
+        `<br>Select a pair to light hits. Each entry reads <span class="mono">A[i]→B[j] off:v</span>.`;
+      return;
+    }
+    const preview = sel.hits.slice(0, 12)
+      .map(h => `${h.posA}→${h.posB}(${h.off >= 0 ? '+' : ''}${h.off}):${h.v}`).join('  ')
+      + (sel.hits.length > 12 ? '  …' : '');
+    box.innerHTML =
+      `<b>${sel.label}</b> — <span class="mono">${sel.a}</span> → <span class="mono">${sel.b}</span>` +
+      ` · <b>${sel.count}</b> hits at offsets ${formatOffsets()}` +
+      (filterState.posMin > 0 ? ` (pos ≥ ${filterState.posMin})` : '') +
+      `<br><span class="mono">${preview || 'none'}</span>`;
+    return;
+  }
+
+  if (mode === 'notes') {
+    box.classList.add('show');
+    const shown = notesRows();
+    const n = shown.reduce((s, c) => s + c.text.length, 0);
+    const filt = shown.length !== cribs.length ? ` · showing ${shown.length}/${cribs.length}` : '';
+    box.innerHTML =
+      `<b>Notes / cribs</b> — ${cribs.length} crib${cribs.length === 1 ? '' : 's'}${filt} covering <b>${n}</b> glyphs. ` +
+      'Yellow letters on the grid are plaintext overlays. Click a cell with a draft crib to place; click a listed crib to focus.';
+    return;
+  }
+
+  if (mode === 'trio') {
+    box.classList.remove('show');
+    box.innerHTML = '';
+    return;
+  }
+
+  if (mode === 'families') {
+    box.classList.add('show');
+    const all = famViewRows(null);
+    let tbl = '<table class="rtbl"><tr><th>family</th><th>messages</th><th>self</th><th>cross</th></tr>';
+    const fams = filterState.family === 'all' ? ['a', 'b', 'g'] : [filterState.family];
+    fams.forEach(f => {
+      const ms = FAM_MSGS[f] || [];
+      const rows = all.filter(x => MSG_FAM[x.a] === f);
+      const self = rows.filter(x => x.a === x.b).length;
+      const cross = rows.length - self;
+      tbl += `<tr><td class="hot">${FAM_LABEL[f]}</td><td>${ms.map(shortName).join(' ')}</td>` +
+        `<td class="mono">${self}</td><td class="mono">${cross}</td></tr>`;
+    });
+    tbl += '</table>';
+    box.innerHTML =
+      '<b>Families</b> — α first 3 · β middle 3 · γ last 3. ' +
+      'Olive = same-message isomorph; indigo = cross-message within family. ' +
+      'Split cell = both. Underlines = identical passages.' + tbl;
+    return;
+  }
+
+  if (mode === 'refrain') {
+    box.classList.add('show');
+    const RS = D.refrainStats || {};
+    const S = RS.regions || [];
+    const SH = RS.shared || {};
+
+    let tbl = '<table class="rtbl"><tr>' +
+      '<th>message</th><th>period</th><th>copy 1</th><th>copy 2</th>' +
+      '<th>verified iso</th><th>copy1 vs copy2 identity</th></tr>';
+    S.forEach(r => {
+      tbl += `<tr><td>${r.msg}</td><td class="mono">${r.period}</td>` +
+        `<td class="mono">${r.copy1[0]}–${r.copy1[1]}</td>` +
+        `<td class="mono">${r.copy2[0]}–${r.copy2[1]}</td>` +
+        `<td class="mono">len ${r.isoLen} · ${r.links}L</td>` +
+        `<td class="mono hot">${r.identity}/${r.period}</td></tr>`;
+    });
+    tbl += '</table>';
+
+    const fmt = a => (a || []).map(t => `(${t[0]},${t[1]})`).join(' ');
+    const skelBox =
+      '<div class="rnote"><b>Shared skeleton — the crib template.</b> Aligning all three phrases ' +
+      '(E1@33 · W1@33 · E2@38), the repeat-link offsets that coincide:' +
+      `<br>&nbsp;&nbsp;all three: <span class="mono hot">${fmt(SH.all3)}</span>` +
+      `<br>&nbsp;&nbsp;W1 ∩ E2 : <span class="mono hot">${fmt(SH.w1e2)}</span></div>`;
+
+    let focus = '<br>Select a row: <b>tandem</b> rows light the two copies inside one message (copy 1 amber, copy 2 teal); <b>cross</b> rows link copies between messages. All 6 copies are mutually isomorphic.';
+    if (sel) {
+      if (sel.tandem) {
+        const sk = (sel.skeleton || []).map(t => `(${t[0]},${t[1]})`).join(' ');
+        focus = `<br><b>${sel.a}</b> tandem — copy 1 [${sel.i}], copy 2 [${sel.j}], period <span class="mono">${sel.period}</span>. ` +
+          `Verified perfect isomorph: len <span class="mono">${sel.isoLen}</span>, <span class="mono">${sel.links}</span> links. ` +
+          `Identity between copies: <span class="mono hot">${sel.identity}/${sel.period}</span> — same plaintext, zero shared glyphs.` +
+          (sk ? `<br>skeleton: <span class="mono">${sk}</span>` : '');
+      } else {
+        focus = `<br><b>Cross-message</b> — ${sel.a}[${sel.i}] (${sel.ta}) ~ ${sel.b}[${sel.j}] (${sel.tb}), ` +
+          `len <span class="mono">${sel.len}</span>, <span class="mono">${sel.links}</span> links. Same phrase, different message.`;
+      }
+    }
+    const g4 = RS.gap4 || {};
+    box.innerHTML =
+      '<b>Refrain</b> — the α family (E1 · W1 · E2) each encode one phrase <b>twice, back-to-back</b>. ' +
+      'Structure: header (1–24, shared verbatim) → bridge → <b>X X</b> → short tail. ' +
+      'β and γ show no tandem structure. All 6 copies are mutually isomorphic (12/12 cross-pairs).' +
+      tbl + skelBox +
+      `<div class="rnote">Period differs per message (28 / 30 / 35) — one phrase with message-specific length. ` +
+      `Calibration: 0 of 200 shuffled α-corpora produced even a 3-link cross-message isomorph. ` +
+      `The refrain holds ${g4.inside || 6} of the ${g4.total || 26} corpus gap-4 pairs; excluding the refrain regions ` +
+      `entirely, the gap-4 excess still stands (z ${g4.exRefrain || 3.44} vs ${g4.full || 4.22} full) — so it is not a refrain artifact.</div>` +
+      focus;
+    return;
+  }
+
+  if (!sel) {
+    box.classList.remove('show');
+    box.innerHTML = '';
+    return;
+  }
+  box.classList.add('show');
+
+  const range = filterState.trimEdges ? isoContentRange(sel) : { lo: 0, hi: sel.len - 1, trimmed: false };
+  const showLen = range.hi - range.lo + 1;
+  const cap = Math.min(showLen, 24);
+  const seqA = MSG[sel.a].slice(sel.i + range.lo, sel.i + range.lo + cap).join(' ');
+  const seqB = MSG[sel.b].slice(sel.j + range.lo, sel.j + range.lo + cap).join(' ');
+  const trunc = showLen > 24 ? '…' : '';
+  const title = `${ISO_KIND_META[mode]?.label || mode} isomorph`;
+  const extras = [];
+  if (sel.links != null) extras.push(`${sel.links} repeat-links`);
+  if (sel.delta != null) extras.push(`Δ ${sel.delta}`);
+  if (sel.mm != null) extras.push(`${sel.mm} mismatches`);
+  if (range.trimmed) extras.push(`trimmed ${sel.len}→${showLen} (drop +0..${range.lo - 1 < 0 ? '' : range.lo - 1}${range.lo > 0 ? '' : '∅'} head, +${range.hi + 1}.. tail)`);
+
+  let extraLine = '';
+  if (mode === 'arithmetic') {
+    const dA = MSG[sel.a].slice(sel.i + range.lo, sel.i + range.lo + cap);
+    const deltas = dA.slice(1).map((v, k) => ((v - dA[k]) % 83 + 83) % 83).join(', ');
+    extraLine = `Δ sequence: <span class="mono">${deltas}${trunc}</span><br>`;
+  } else if (mode === 'imperfect') {
+    const gaps = isoMismatchOffsets(sel).filter(o => o >= range.lo && o <= range.hi);
+    const gapTxt = gaps.length ? gaps.map(o => `+${o}`).join(', ') : 'none';
+    extraLine = `Skeleton gaps at offsets: <span class="mono">${gapTxt}</span> (red dashed)<br>`;
+  }
+
+  const headNote = range.trimmed
+    ? ` · showing [${sel.i + range.lo}..${sel.i + range.hi}] / [${sel.j + range.lo}..${sel.j + range.hi}]`
+    : '';
+
+  box.innerHTML =
+    `<b>${title}</b> — ${sel.a}[${sel.i}] ~ ${sel.b}[${sel.j}], length ${sel.len}` +
+    (range.trimmed ? ` → <b>${showLen}</b> visible` : '') +
+    (extras.length ? `, ${extras.filter(e => !e.startsWith('trimmed')).join(', ')}` : '') +
+    headNote + `<br>` +
+    (range.trimmed ? `<span class="mono">trim empty head/tail on — offsets +${range.lo}..+${range.hi}</span><br>` : '') +
+    extraLine +
+    `${sel.a}: <span class="mono">${seqA}${trunc}</span><br>` +
+    `${sel.b}: <span class="mono">${seqB}${trunc}</span>`;
+}
+
+function buildMsgToggles() {
+  const box = $('msgpick');
+  if (!box) return;
+  box.innerHTML = '';
+  box.append(el('span', 'msgpicklab', 'show:'));
+  [['all', 'all'], ['a', 'α'], ['b', 'β'], ['g', 'γ'], ['none', 'none']].forEach(([g, lab]) => {
+    const btn = el('span', 'msgtog grp', lab);
+    btn.onclick = () => {
+      if (g === 'all') visibleMsgs = new Set(NAMES);
+      else if (g === 'none') visibleMsgs = new Set();
+      else visibleMsgs = new Set(NAMES.filter(n => MSG_FAM[n] === g));
+      buildMsgToggles(); paint();
+    };
+    box.append(btn);
+  });
+  NAMES.forEach(n => {
+    const short = (n[0] === 'E' ? 'E' : 'W') + n.slice(-1);
+    const on = visibleMsgs.has(n);
+    const btn = el('span', 'msgtog ' + (n[0] === 'E' ? 'E' : 'W') + (on ? ' on' : ''), short);
+    btn.title = n;
+    btn.onclick = () => {
+      if (visibleMsgs.has(n)) visibleMsgs.delete(n); else visibleMsgs.add(n);
+      buildMsgToggles(); paint();
+    };
+    box.append(btn);
+  });
+}
+
+function drawGrid() {
+  const g = $('grid');
+  g.innerHTML = '';
+  NAMES.forEach(n => {
+    const short = (n[0] === 'E' ? 'E' : 'W') + n.slice(-1);
+    const fam = MSG_FAM[n] || 'a';
+    const b = el('div', 'msg fam-' + fam);
+    b.dataset.msg = n;
+    const h = el('div', 'mhead');
+    h.append(el('span', 'fam fam-' + fam));
+    const tag = el('span', n[0] === 'E' ? 'tagE' : 'tagW', short);
+    tag.style.cursor = 'pointer';
+    tag.title = `${n} · ${MSG[n].length} glyphs · ${new Set(MSG[n]).size} distinct · family ${FAM_LABEL[fam] || fam} — click to hide (restore via top bar)`;
+    tag.onclick = () => { visibleMsgs.delete(n); buildMsgToggles(); paint(); };
+    h.append(tag);
+    b.append(h);
+    const cs = el('div', 'cells' + (wrap26 ? ' wrap26' : ''));
+    MSG[n].forEach((v, i) => {
+      const c = el('div', 'c', String(v));
+      c.dataset.v = v;
+      c.dataset.m = n;
+      c.dataset.i = i;
+      c.append(el('span', 'tip', `${n}[${i}] = ${trig(v)}${i === 0 ? ' · serial' : ''}`));
+      cs.append(c);
+    });
+    b.append(cs);
+    g.append(b);
+  });
+  paint();
+}
+
+function applyCribAttr(c, pt) {
+  if (pt) c.dataset.pt = pt;
+  else delete c.dataset.pt;
+}
+
+function paint() {
+  document.querySelectorAll('#grid .msg').forEach(b => {
+    const msg = b.dataset.msg;
+    const hideTrio = mode === 'trio' && !TRIO_MSGS.includes(msg);
+    b.classList.toggle('hidden', hideTrio || !visibleMsgs.has(msg));
+  });
+
+  const gapHits = mode === 'gaps' ? gapRows() : [];
+  const gapKeys = new Set();
+  gapHits.forEach(r => {
+    gapKeys.add(r.msg + '|' + r.i0);
+    gapKeys.add(r.msg + '|' + r.i1);
+  });
+  const gapFocusKeys = new Set();
+  if (mode === 'gaps' && sel) {
+    gapFocusKeys.add(sel.msg + '|' + sel.i0);
+    gapFocusKeys.add(sel.msg + '|' + sel.i1);
+  }
+
+  const freqVal = (mode === 'freq' && sel) ? sel.v : null;
+  const freqMsgs = freqVal != null ? new Set(freqScopeMessages()) : null;
+
+  const sameKeys = new Set();
+  if (mode === 'samepos' && sel && sel.hits) {
+    sel.hits.forEach(h => {
+      sameKeys.add(sel.a + '|' + h.pos);
+      sameKeys.add(sel.b + '|' + h.pos);
+    });
+  }
+
+  const offA = new Set(), offB = new Set();
+  if (mode === 'offset' && sel && sel.hits) {
+    sel.hits.forEach(h => {
+      offA.add(sel.a + '|' + h.posA);
+      offB.add(sel.b + '|' + h.posB);
+    });
+  }
+
+  // skeleton-style modes: color each repeat-link group; leave non-links plain
+  const useLinks = mode === 'perfect' || mode === 'imperfect' || mode === 'rank' || mode === 'refrain';
+  let linkGroups = null;
+  if (useLinks && sel) linkGroups = isoLinkGroups(sel);
+  const mmOffs = (mode === 'imperfect' && sel) ? new Set(isoMismatchOffsets(sel)) : null;
+  const content = (isIsoMode(mode) && sel)
+    ? (filterState.trimEdges ? isoContentRange(sel) : { lo: 0, hi: sel.len - 1, trimmed: false })
+    : null;
+  let hovGroup = -1;
+  if (linkGroups && hov && sel) {
+    const inA = hov.m === sel.a && hov.i >= sel.i && hov.i < sel.i + sel.len;
+    const inB = hov.m === sel.b && hov.i >= sel.j && hov.i < sel.j + sel.len;
+    if (inA || inB) {
+      const off = inA ? hov.i - sel.i : hov.i - sel.j;
+      if (content && (off < content.lo || off > content.hi)) { /* trimmed away */ }
+      else if (linkGroups.has(off) && !(mmOffs && mmOffs.has(off))) hovGroup = linkGroups.get(off);
+    }
+  }
+
+  const ptMap = mode === 'notes' ? cribMap() : null;
+  const selCrib = (mode === 'notes' && cribSel) ? cribs.find(c => c.id === cribSel) : null;
+
+  document.querySelectorAll('#grid .c').forEach(c => {
+    const v = +c.dataset.v;
+    const n = c.dataset.m;
+    const i = +c.dataset.i;
+    const pt = ptMap ? ptMap.get(n + '\0' + i) : null;
+    applyCribAttr(c, pt);
+
+    c.className = 'c' + (pt ? ' hasCrib' : '');
+    c.style.background = '';
+    c.style.borderColor = '';
+    c.style.color = '';
+    c.style.boxShadow = '';
+
+    if (i === 0) c.classList.add('serial');
+    if (showIdent) {
+      const fam = identFam[n][i];
+      if (fam) c.classList.add('ident-' + fam);
+    }
+    if (pin.has(n + '|' + i)) c.classList.add('pinned');
+
+    if (mode === 'notes') {
+      if (selCrib && n === selCrib.msg && i >= selCrib.i && i < selCrib.i + selCrib.text.length) {
+        c.classList.add('cribAnchor');
+      }
+      return;
+    }
+
+    if (mode === 'trio' || mode === 'families') return;
+
+    if (mode === 'freq') {
+      if (freqVal != null && v === freqVal && freqMsgs.has(n)) c.classList.add('freqHit');
+      return;
+    }
+
+    if (mode === 'gaps') {
+      const key = n + '|' + i;
+      if (gapKeys.has(key)) {
+        c.classList.add('gapHit');
+        if (gapFocusKeys.has(key)) c.classList.add('gapFocus');
+      }
+      return;
+    }
+
+    if (mode === 'samepos') {
+      if (sameKeys.has(n + '|' + i)) c.classList.add('samepos');
+      return;
+    }
+
+    if (mode === 'offset') {
+      const key = n + '|' + i;
+      if (offA.has(key)) c.classList.add('offA');
+      else if (offB.has(key)) c.classList.add('offB');
+      return;
+    }
+
+    if (!isIsoMode(mode) || !sel) return;
+
+    const inA = n === sel.a && i >= sel.i && i < sel.i + sel.len;
+    const inB = n === sel.b && i >= sel.j && i < sel.j + sel.len;
+    if (!(inA || inB)) return;
+
+    const off = inA ? i - sel.i : i - sel.j;
+
+    // imperfect gaps always paint (trim range also expands to include them)
+    if (mmOffs && mmOffs.has(off)) {
+      c.classList.add('x', 'isoGap');
+      return;
+    }
+
+    if (content && (off < content.lo || off > content.hi)) return;
+
+    if (linkGroups) {
+      if (linkGroups.has(off)) {
+        const g = linkGroups.get(off);
+        const [bg, , text] = linkColor(g);
+        c.classList.add('isoLink');
+        c.style.background = bg;
+        c.style.color = text;
+        if (g === hovGroup) c.classList.add('isoHov');
+      }
+      return;
+    }
+
+    // non-skeleton iso modes: light span fill + dual outline after
+    c.classList.add(inA ? 'spanA' : 'spanB');
+  });
+
+  if (isIsoMode(mode) && sel) paintIsoBoxes(sel, content);
+
+  if (mode === 'trio' || mode === 'families') {
+    const selfBg = '#4A5A28';
+    const crossBg = '#3A3A6A';
+    const selfEdge = '#B4D468';
+    const crossEdge = '#9B9BF0';
+    const cellAt = (mm, idx) =>
+      document.querySelector(`#grid .c[data-m="${CSS.escape(mm)}"][data-i="${idx}"]`);
+    const flags = new Map(); // key -> { self, cross }
+    const touch = (mm, idx, which) => {
+      const key = mm + '\0' + idx;
+      if (!flags.has(key)) flags.set(key, { self: false, cross: false, mm, idx });
+      flags.get(key)[which] = true;
+    };
+
+    // precompute each iso's trimmed span once (reused for hover); honor left-tab filters
+    const specs = famViewRows(mode === 'trio' ? TRIO_MSGS : null)
+      .map(s => ({ s, range: isoContentRange(s), self: s.a === s.b }));
+
+    specs.forEach(({ s, range, self }) => {
+      const which = self ? 'self' : 'cross';
+      for (let off = range.lo; off <= range.hi; off++) {
+        touch(s.a, s.i + off, which);
+        touch(s.b, s.j + off, which);
+      }
+      const lg = isoLinkGroups(s);
+      for (let off = range.lo; off <= range.hi; off++) {
+        if (!lg.has(off)) continue;
+        const [, accent] = linkColor(lg.get(off));
+        [[s.a, s.i + off], [s.b, s.j + off]].forEach(([mm, idx]) => {
+          const c = cellAt(mm, idx);
+          if (c) { c.classList.add('isoLink'); c.style.color = accent; }
+        });
+      }
+    });
+
+    for (const f of flags.values()) {
+      const c = cellAt(f.mm, f.idx);
+      if (!c) continue;
+      if (f.self && f.cross) c.style.background = `linear-gradient(90deg, ${selfBg} 50%, ${crossBg} 50%)`;
+      else if (f.self) c.style.background = selfBg;
+      else c.style.background = crossBg;
+    }
+
+    // hover: ring every isomorph span that covers the hovered cell (self olive / cross indigo)
+    if (hov) {
+      const covers = (s, r, mm, idx) =>
+        (mm === s.a && idx >= s.i + r.lo && idx <= s.i + r.hi) ||
+        (mm === s.b && idx >= s.j + r.lo && idx <= s.j + r.hi);
+      const ring = new Map(); // key -> { self, cross, mm, idx }
+      const markRing = (mm, idx, which) => {
+        const key = mm + '\0' + idx;
+        if (!ring.has(key)) ring.set(key, { self: false, cross: false, mm, idx });
+        ring.get(key)[which] = true;
+      };
+      specs.forEach(({ s, range, self }) => {
+        if (!covers(s, range, hov.m, hov.i)) return;
+        const which = self ? 'self' : 'cross';
+        for (let off = range.lo; off <= range.hi; off++) {
+          markRing(s.a, s.i + off, which);
+          markRing(s.b, s.j + off, which);
+        }
+      });
+      for (const r of ring.values()) {
+        const c = cellAt(r.mm, r.idx);
+        if (!c) continue;
+        const sh = [];
+        if (r.self) sh.push(`inset 0 0 0 2px ${selfEdge}`);
+        if (r.cross) sh.push(`0 0 0 2px ${crossEdge}`);
+        if (sh.length) { c.style.boxShadow = sh.join(','); c.classList.add('isoRing'); }
+      }
+    }
+  }
+}
+
+$('grid').addEventListener('mouseover', e => {
+  if (mode === 'notes') return; // crib clicks must not fight hover repaint
+  const c = e.target.closest('.c');
+  if (c) { hov = { m: c.dataset.m, i: +c.dataset.i, v: +c.dataset.v }; paint(); }
+});
+$('grid').addEventListener('mouseout', e => {
+  if (mode === 'notes') return;
+  if (e.target.closest('.c')) { hov = null; paint(); }
+});
+
+$('grid').addEventListener('click', e => {
+  const c = e.target.closest('.c');
+  if (!c) return;
+  const m = c.dataset.m;
+  const i = +c.dataset.i;
+
+  if (mode === 'notes') {
+    const live = $('cribDraftInput');
+    const draft = (live ? live.value : cribDraft).replace(/\s+/g, '');
+    if (draft) {
+      placeCrib(m, i, draft[0]);
+      // multi-letter draft advances; single letter stays so you can stamp many cells
+      if (draft.length > 1) {
+        cribDraft = draft.slice(1);
+        if (live) live.value = cribDraft;
+      }
+      cribPlaceArmed = !!(live ? live.value : cribDraft).replace(/\s+/g, '');
+      pin.add(m + '|' + i);
+      drawList();
+      paint();
+      updateDetail();
+      const again = $('cribDraftInput');
+      if (again) again.focus();
+      return;
+    }
+  }
+
+  // toggle this cell in the multi-select set
+  const k = m + '|' + i;
+  if (pin.has(k)) pin.delete(k); else pin.add(k);
+  paint();
+});
+
+$('bClear').onclick = () => {
+  pin.clear();
+  sel = null;
+  cribSel = null;
+  drawList();
+  paint();
+  updateDetail();
+};
+
+
+$('showIdent').onchange = e => {
+  showIdent = e.target.checked;
+  e.target.closest('label').classList.toggle('on', showIdent);
+  paint();
+};
+// reflect initial state on the label if we style .ctl.on later
+$('showIdent').closest('label').classList.toggle('on', showIdent);
+
+$('wrap26').onchange = e => {
+  wrap26 = e.target.checked;
+  document.querySelectorAll('#grid .cells').forEach(cs => cs.classList.toggle('wrap26', wrap26));
+};
+
+function updateCounts() {
+  const bits = ISO_KINDS
+    .map(k => [k, (ISO_DATA[k] || []).length])
+    .filter(([, n]) => n > 0)
+    .map(([k, n]) => `${n} ${ISO_KIND_META[k].label.toLowerCase()}`);
+  const gc = gapCounts(filterState.family);
+  const famLab = filterState.family === 'all' ? '' :
+    ` · family ${FAM_LABEL[filterState.family] || filterState.family}`;
+  const gapBit = mode === 'gaps'
+    ? `gap-${filterState.gap}: ${gapRows().length}${famLab}`
+    : `gap-4: ${gc[4] || 0}`;
+  $('counts').textContent =
+    `${NAMES.length} messages · ${totalGlyphs()} glyphs · ${bits.join(' · ') || 'no isomorphs'} · ${IDENTICAL.length} identical runs (≥2) · ${gapBit}`;
+}
+
+$('counts').textContent = ''; // filled by updateCounts() below
+
+
+$('foot').innerHTML = `
+  <span><span class="sw fam-a"></span>family α</span>
+  <span><span class="sw fam-b"></span>family β</span>
+  <span><span class="sw fam-g"></span>family γ</span>
+  <span><span class="sw" style="background:var(--ident)"></span>serial</span>
+  <span><span class="sw" style="background:transparent;border-bottom:3px solid var(--famA)"></span>identical α</span>
+  <span><span class="sw" style="background:transparent;border-bottom:3px solid var(--famB)"></span>identical β</span>
+  <span><span class="sw" style="background:transparent;border-bottom:3px solid var(--famG)"></span>identical γ</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--violet) 28%,var(--bg));border:1px solid var(--violet-d)"></span>selected cell</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--east) 14%,var(--bg));border:1px solid var(--east)"></span>span A</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--west) 14%,var(--bg));border:1px solid var(--west)"></span>span B</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--mm) 34%,var(--bg));border:2px dashed var(--mm)"></span>imperfect skeleton gap</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--gap4) 18%,var(--bg));border:1px solid var(--gap4)"></span>gap / offset hit</span>
+  <span><span class="sw" style="background:color-mix(in srgb,var(--west) 16%,var(--bg));border:1px solid var(--west)"></span>same position hit</span>
+`;
+
+visibleMsgs = new Set(NAMES);
+buildMsgToggles();
+buildModes();
+buildFilters();
+drawList();
+drawGrid();
+updateDetail();
+updateCounts();
+
+// Bump APP_VERSION on every release so the disclaimer shows again.
+const APP_VERSION = '2026-07-21';
+const DISCLAIMER_STORE = 'eye-viewer.disclaimer.ack';
+(function showDisclaimerIfNeeded() {
+  const verEl = $('disclaimer-ver');
+  if (verEl) verEl.textContent = APP_VERSION;
+  let ack = null;
+  try { ack = localStorage.getItem(DISCLAIMER_STORE); } catch (_) {}
+  if (ack === APP_VERSION) return;
+  const box = $('disclaimer');
+  if (!box) return;
+  box.hidden = false;
+  const ok = $('disclaimer-ok');
+  ok.focus();
+  ok.onclick = () => {
+    try { localStorage.setItem(DISCLAIMER_STORE, APP_VERSION); } catch (_) {}
+    box.hidden = true;
+  };
+})();
+</script>
+</body>
+</html>
