@@ -1,2 +1,6 @@
 .DS_Store
 sarmie/data/lists/blocklist-en.txt
+__pycache__/
+*.py[cod]
+noita/scripts/
+noita/texts/
