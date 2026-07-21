@@ -269,7 +269,7 @@ const ISO_KIND_META = {
     desc: 'B ≡ A + Δ (mod 83). Constant offset between aligned windows.' },
   rank:       { label: 'Rank',       extras: [],                  filters: ['family', 'scope', 'len', 'trimEdges', 'sort'],
     desc: 'Matching weak-order signature. Hides windows that contain shared identical CT runs (≥2).' },
-  imperfect:  { label: 'Imperfect',  extras: ['links', 'mm'],     filters: ['family', 'scope', 'len', 'links', 'mmRange', 'trimEdges', 'sort'],
+  imperfect:  { label: 'Imperfect',  extras: ['links', 'mm'],     filters: ['family', 'scope', 'len', 'links', 'mmMax', 'trimEdges', 'sort'],
     desc: 'Near-perfect skeletons with mismatches (red dashed). Scored like Perfect on message A’s gap pattern. Windows never end on a gap. Hides shared identical CT runs (≥2).' },
   refrain:    { label: 'Refrain',    extras: [],                  filters: ['family', 'scope', 'sort'],
     desc: 'The α-family tandem repeat: one phrase encoded twice back-to-back (E1/W1/E2 only). Tandem rows show the two copies of one message; cross rows link copies between messages. Link cells colored — the two copies share a skeleton but zero glyphs.' },
@@ -322,6 +322,17 @@ const ISO_DATA = loadIsoBuckets(D);
    n = distinct CT strings matching the pattern (shared identical runs collapsed).
 */
 const ALPHA = 83;
+
+function modAlpha(n) { return ((n % ALPHA) + ALPHA) % ALPHA; }
+/** Prefer residue in (−41..41] so Δ64 displays as −19 (still ≡ 64 mod 83). */
+function signedDelta(d) {
+  d = modAlpha(d);
+  return d > (ALPHA >> 1) ? d - ALPHA : d;
+}
+function fmtDelta(d) {
+  const s = signedDelta(d);
+  return (s > 0 ? '+' : '') + s;
+}
 
 function gapPattern(seq) {
   const cnt = Object.create(null);
@@ -827,7 +838,7 @@ const trioIsos = () => familyIsos(TRIO_MSGS);
 
 const filterState = {
   scope: 'all', family: 'all', len: 4, links: 2, sort: 'score',
-  mmMin: 1, mmMax: 10,
+  mmMax: 3,
   trimEdges: false,
   minCount: 1, posMin: 1, offsets: new Set([-1, 1]), msg: 'all',
   gap: 4,
@@ -886,7 +897,7 @@ function hasAlignedIdenticalRun(s, minRun = 2) {
 }
 
 function isoRows() {
-  const { len, links, sort, mmMin, mmMax } = filterState;
+  const { len, links, sort, mmMax } = filterState;
   let rows = (ISO_DATA[mode] || []).slice().filter(x => passesFamScope(x.a, x.b));
   const needsLinks = mode === 'perfect' || mode === 'imperfect';
   rows = rows.filter(x => x.len >= len && (!needsLinks || (x.links || 0) >= links));
@@ -895,10 +906,7 @@ function isoRows() {
     rows = rows.filter(x => !hasAlignedIdenticalRun(x, 2));
   }
   if (mode === 'imperfect') {
-    rows = rows.filter(x => {
-      const mm = x.mm || 0;
-      return mm >= mmMin && mm <= mmMax;
-    });
+    rows = rows.filter(x => (x.mm || 0) <= mmMax);
   }
   rows.sort(
     sort === 'len' ? (a, b) => b.len - a.len || (b.links || 0) - (a.links || 0)
@@ -1267,17 +1275,7 @@ function buildFilters() {
     n.oninput = () => { filterState.links = +n.value || 0; drawList(); paint(); updateDetail(); };
     add('min links', n);
   }
-  if (meta.filters.includes('mmRange')) {
-    const lo = el('input');
-    lo.type = 'number';
-    lo.min = 1;
-    lo.value = filterState.mmMin;
-    lo.oninput = () => {
-      filterState.mmMin = Math.max(1, +lo.value || 1);
-      refreshSel();
-      drawList(); paint(); updateDetail();
-    };
-    add('min gaps', lo);
+  if (meta.filters.includes('mmMax')) {
     const hi = el('input');
     hi.type = 'number';
     hi.min = 1;
@@ -1468,7 +1466,7 @@ function drawList() {
       }
       bits.push(`${x.len}`);
       if (x.links != null) bits.push(`${x.links}L`);
-      if (x.delta != null) bits.push(`Δ${x.delta}`);
+      if (x.delta != null) bits.push(`Δ${fmtDelta(x.delta)} (mod ${ALPHA})`);
       if (x.mm != null) bits.push(`${x.mm}mm`);
       metaTxt = bits.join(' · ');
     }
@@ -1694,15 +1692,19 @@ function updateDetail() {
     extras.push(`score ${sel.score.toFixed(1)} (∼10⁻${sel.score.toFixed(0)})`);
   }
   if (sel.links != null) extras.push(`${sel.links} repeat-links`);
-  if (sel.delta != null) extras.push(`Δ ${sel.delta}`);
+  if (sel.delta != null) extras.push(`Δ ${fmtDelta(sel.delta)} (mod ${ALPHA})`);
   if (sel.mm != null) extras.push(`${sel.mm} mismatches`);
   if (range.trimmed) extras.push(`trimmed ${sel.len}→${showLen} (drop +0..${range.lo - 1 < 0 ? '' : range.lo - 1}${range.lo > 0 ? '' : '∅'} head, +${range.hi + 1}.. tail)`);
 
   let extraLine = '';
   if (mode === 'arithmetic') {
-    const dA = MSG[sel.a].slice(sel.i + range.lo, sel.i + range.lo + cap);
-    const deltas = dA.slice(1).map((v, k) => ((v - dA[k]) % 83 + 83) % 83).join(', ');
-    extraLine = `Δ sequence: <span class="mono">${deltas}${trunc}</span><br>`;
+    const offs = [];
+    for (let t = range.lo; t <= range.hi && offs.length < cap; t++) {
+      offs.push(fmtDelta(MSG[sel.b][sel.j + t] - MSG[sel.a][sel.i + t]));
+    }
+    extraLine =
+      `B − A (mod ${ALPHA}): <span class="mono">${offs.join(' ')}${trunc}</span>` +
+      ` · constant <span class="mono">${fmtDelta(sel.delta)}</span><br>`;
   } else if (mode === 'imperfect') {
     const gaps = isoMismatchOffsets(sel).filter(o => o >= range.lo && o <= range.hi);
     const gapTxt = gaps.length ? gaps.map(o => `+${o}`).join(', ') : 'none';
