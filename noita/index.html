@@ -183,26 +183,6 @@ button.on{background:var(--sel);border-color:var(--sel);color:var(--bg);font-wei
 .rtbl td{color:var(--dim)}
 .rtbl td.hot{color:var(--ident);font-weight:600}
 .rnote{font-size:9.5px;color:var(--faint);line-height:1.4;margin-bottom:2px}
-.notesbox{display:flex;flex-direction:column;gap:6px;padding:6px 8px}
-.notesbox textarea{width:100%;min-height:120px;resize:vertical;font-family:var(--mono);font-size:11px;
-  background:var(--panel2);color:var(--ink);border:1px solid var(--edge2);border-radius:2px;padding:6px;line-height:1.4}
-.notesbox textarea:focus{outline:2px solid var(--sel);outline-offset:1px}
-.cribform{display:flex;flex-direction:column;gap:5px}
-.cribform input[type=text]{width:100%;font-family:var(--mono);font-size:11px;background:var(--panel2);color:var(--ink);
-  border:1px solid var(--edge2);padding:4px 6px;border-radius:2px}
-.cribhint{font-size:9.5px;color:var(--faint);line-height:1.35}
-.criblist{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
-.cribrow{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:center;padding:4px 6px;
-  border:1px solid var(--edge);border-radius:2px;font-size:10px;cursor:pointer}
-.cribrow:hover{background:var(--panel2)}
-.cribrow.sel{border-color:var(--ident);background:color-mix(in srgb,var(--ident) 14%,var(--bg))}
-.cribrow .meta{color:var(--faint);font-size:9px}
-.cribrow button{font-size:9px;padding:1px 5px}
-/* crib letter on top via ::before — CT number stays the cell text */
-.c.hasCrib{flex-direction:column;gap:1px;height:auto;min-height:calc(var(--cell-h) + 12px);padding:1px 0;
-  font-size:var(--cell-fs);color:var(--dim);line-height:1}
-.c.hasCrib::before{content:attr(data-pt);font-size:11px;color:var(--ident);font-weight:700;line-height:1.1}
-.c.cribAnchor{outline:1.5px solid var(--sel);outline-offset:-1px;z-index:3}
 .c.freqHit{border-color:var(--ident);background:color-mix(in srgb,var(--ident) 14%,var(--bg));color:#FFF6D0;font-weight:600}
 
 .disclaimer{
@@ -284,13 +264,13 @@ const trig = v => {
 */
 const ISO_KIND_META = {
   perfect:    { label: 'Perfect',    extras: ['links'],           filters: ['family', 'scope', 'len', 'links', 'trimEdges', 'sort'],
-    desc: 'Matching repeat-link skeletons. Hides windows that contain shared identical CT runs (≥2). Link cells colored; dual-color span outline.' },
+    desc: 'Matching repeat-link skeletons. Score = −log₁₀ chance of the gap pattern occurring this often at random (wiki / eye-solver). Hides windows that contain shared identical CT runs (≥2).' },
   arithmetic: { label: 'Arithmetic', extras: ['delta'],           filters: ['family', 'scope', 'len', 'trimEdges', 'sort'],
     desc: 'B ≡ A + Δ (mod 83). Constant offset between aligned windows.' },
   rank:       { label: 'Rank',       extras: [],                  filters: ['family', 'scope', 'len', 'trimEdges', 'sort'],
     desc: 'Matching weak-order signature. Hides windows that contain shared identical CT runs (≥2).' },
   imperfect:  { label: 'Imperfect',  extras: ['links', 'mm'],     filters: ['family', 'scope', 'len', 'links', 'mmRange', 'trimEdges', 'sort'],
-    desc: 'Near-perfect skeletons with mismatches (red dashed). Windows never end on a gap — a gap into trailing wildcards is kept. Hides windows that contain shared identical CT runs (≥2), same as Perfect.' },
+    desc: 'Near-perfect skeletons with mismatches (red dashed). Scored like Perfect on message A’s gap pattern. Windows never end on a gap. Hides shared identical CT runs (≥2).' },
   refrain:    { label: 'Refrain',    extras: [],                  filters: ['family', 'scope', 'sort'],
     desc: 'The α-family tandem repeat: one phrase encoded twice back-to-back (E1/W1/E2 only). Tandem rows show the two copies of one message; cross rows link copies between messages. Link cells colored — the two copies share a skeleton but zero glyphs.' },
 };
@@ -335,6 +315,150 @@ function loadIsoBuckets(D) {
 }
 
 const ISO_DATA = loadIsoBuckets(D);
+
+/* ---- wiki / eye-solver gap-pattern scores (Lymm37) ----
+   score = −log₁₀ P(X≥n), X~Poisson(μ), μ = opportunities × 83^(−extra)
+   extra = Σ (count−1) over repeated symbols in the gap pattern.
+   n = distinct CT strings matching the pattern (shared identical runs collapsed).
+*/
+const ALPHA = 83;
+
+function gapPattern(seq) {
+  const cnt = Object.create(null);
+  for (const c of seq) cnt[c] = (cnt[c] || 0) + 1;
+  const lab = Object.create(null);
+  let nl = 0, out = '';
+  for (const c of seq) {
+    if (cnt[c] === 1) out += '.';
+    else {
+      if (!(c in lab)) { lab[c] = String.fromCharCode(65 + nl); nl++; }
+      out += lab[c];
+    }
+  }
+  return out;
+}
+
+function trimGapPat(pat) {
+  let lo = 0, hi = pat.length - 1;
+  while (lo <= hi && pat[lo] === '.') lo++;
+  while (hi >= lo && pat[hi] === '.') hi--;
+  if (lo > hi) return null;
+  return { lo, len: hi - lo + 1 };
+}
+
+/** Trimmed gap pattern for an isomorph window (message A). */
+function rowGapPat(r) {
+  const seq = MSG[r.a].slice(r.i, r.i + r.len);
+  const t = trimGapPat(gapPattern(seq));
+  if (!t) return null;
+  return gapPattern(seq.slice(t.lo, t.lo + t.len));
+}
+
+function extraEq(pat) {
+  const c = Object.create(null);
+  for (const ch of pat) if (ch !== '.') c[ch] = (c[ch] || 0) + 1;
+  let e = 0, nd = 0;
+  for (const k in c) { e += c[k] - 1; nd++; }
+  return [e, nd];
+}
+
+function logFact(n) {
+  let s = 0;
+  for (let i = 2; i <= n; i++) s += Math.log(i);
+  return s;
+}
+
+// Tail-sum — not 1−cdf (underflows → fake huge scores).
+function poissonTailNeglog(mu, n) {
+  if (n <= 0) return 0;
+  if (!(mu > 0)) return Infinity;
+  let logTerm = -mu + n * Math.log(mu) - logFact(n);
+  let term = Math.exp(logTerm);
+  if (!Number.isFinite(term) || term === 0) return -logTerm / Math.LN10;
+  let s = term;
+  for (let k = n; k < n + 10000; k++) {
+    term *= mu / (k + 1);
+    if (!(term > 0) || term < s * 1e-18) break;
+    s += term;
+  }
+  return -Math.log10(Math.max(s, Number.MIN_VALUE));
+}
+
+function opportunities(L) {
+  let o = 0;
+  NAMES.forEach(n => {
+    const m = MSG[n];
+    if (m.length >= L) o += m.length - L + 1;
+  });
+  return o;
+}
+
+/** Annotate perfect/imperfect rows with wiki gap-pattern scores. */
+function scoreIsoRows(rows) {
+  if (!rows || !rows.length) return;
+  const byLen = new Map(); // L -> Set(pat)
+  rows.forEach(r => {
+    const pat = rowGapPat(r);
+    r.pat = pat;
+    if (!pat) { r.score = 0; r.nEff = 0; r.extra = 0; return; }
+    if (!byLen.has(pat.length)) byLen.set(pat.length, new Set());
+    byLen.get(pat.length).add(pat);
+  });
+
+  const info = new Map(); // pat -> {score,nEff,nAll,extra,nd}
+  for (const [L, pats] of byLen) {
+    const buckets = new Map();
+    for (const p of pats) buckets.set(p, { nAll: 0, distinct: new Set() });
+    NAMES.forEach(name => {
+      const m = MSG[name];
+      for (let i = 0; i + L <= m.length; i++) {
+        const seg = m.slice(i, i + L);
+        const raw = gapPattern(seg);
+        // only count spans that are already edge-trimmed (same as eye-solver)
+        if (raw[0] === '.' || raw[raw.length - 1] === '.') continue;
+        const b = buckets.get(raw);
+        if (!b) continue;
+        b.nAll++;
+        b.distinct.add(seg.join(','));
+      }
+    });
+    const opp = opportunities(L);
+    for (const [pat, b] of buckets) {
+      const [extra, nd] = extraEq(pat);
+      const nEff = b.distinct.size;
+      const mu = opp * Math.pow(ALPHA, -extra);
+      info.set(pat, {
+        score: nEff >= 2 ? poissonTailNeglog(mu, nEff) : 0,
+        nEff, nAll: b.nAll, extra, nd, mu, opp,
+      });
+    }
+  }
+
+  rows.forEach(r => {
+    if (!r.pat) return;
+    const s = info.get(r.pat);
+    if (!s) { r.score = 0; r.nEff = 0; r.extra = 0; return; }
+    r.score = s.score;
+    r.nEff = s.nEff;
+    r.nAll = s.nAll;
+    r.extra = s.extra;
+    r.nd = s.nd;
+    r.mu = s.mu;
+    r.opp = s.opp;
+  });
+}
+
+scoreIsoRows(ISO_DATA.perfect);
+scoreIsoRows(ISO_DATA.imperfect);
+
+// ponytail: sanity — A.B.CB.AC-class pattern (extra=3) with 6 hits should score ≫ 10
+(function selfcheckScore() {
+  const mu = 955 * Math.pow(ALPHA, -3);
+  const s = poissonTailNeglog(mu, 6);
+  console.assert(s > 15 && s < 40, 'wiki example score out of range', s);
+  const [e] = extraEq('A.B.CB.AC');
+  console.assert(e === 3, 'A.B.CB.AC extra', e);
+})();
 
 /* ---- derived pattern indexes ---- */
 /** Shift-0 identical runs between message pairs, length ≥ minLen. */
@@ -460,77 +584,18 @@ const MODES = [
     desc: 'All 9 messages in order: α = first 3 (E1·W1·E2), β = middle 3 (W2·E3·W3), γ = last 3 (E4·W4·E5). Olive = same-message iso, indigo = cross-message iso within a family; split fill where they overlap. Colored text = link pairs. Hover rings related within-family spans.',
     filters: ['family', 'scope'],
   },
-  {
-    id: 'notes',
-    label: 'Notes',
-    desc: 'Scratchpad + cribs. Type plaintext, click a glyph to lay it on the ciphertext. Cribs and notes save in this browser.',
-    filters: ['family', 'msg'],
-  },
 ];
 
 function isIsoMode(m) {
   return !!(ISO_KIND_META[m]);
 }
 
-let mode = 'notes';
+let mode = 'perfect';
 let visibleMsgs = new Set(); // which message grids to show; populated at init
 let sel = null;
 let pin = new Set(); // set of "m|i" keys — individually selected cells (multi-select)
 let hov = null; // {m, i, v} or null
 let showIdent = true;
-
-/* ---- notes / cribs (localStorage) ---- */
-const NOTES_KEY = 'eyes-notes-v1';
-let notesText = '';
-let cribs = []; // {id, msg, i, text}
-let cribDraft = '';
-let cribSel = null; // id or null
-let cribPlaceArmed = false;
-
-function loadNotes() {
-  try {
-    const raw = localStorage.getItem(NOTES_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    notesText = o.notes || '';
-    cribs = Array.isArray(o.cribs) ? o.cribs : [];
-  } catch (_) { /* ignore corrupt */ }
-}
-function saveNotes() {
-  try {
-    localStorage.setItem(NOTES_KEY, JSON.stringify({ notes: notesText, cribs }));
-  } catch (_) { /* file:// / quota — keep in-memory */ }
-}
-loadNotes();
-
-function cribMap() {
-  // last crib wins on overlap
-  const map = new Map();
-  cribs.forEach(c => {
-    for (let k = 0; k < c.text.length; k++) {
-      const ch = c.text[k];
-      if (ch === ' ') continue;
-      map.set(c.msg + '\0' + (c.i + k), ch);
-    }
-  });
-  return map;
-}
-
-function placeCrib(msg, i, text) {
-  const t = (text || '').replace(/\s+/g, '');
-  if (!t || !MSG[msg] || i < 0 || i >= MSG[msg].length) return;
-  const clipped = t.slice(0, MSG[msg].length - i);
-  const id = `crib|${msg}|${i}|${Date.now()}`;
-  cribs.push({ id, msg, i, text: clipped });
-  cribSel = id;
-  saveNotes();
-}
-
-function deleteCrib(id) {
-  cribs = cribs.filter(c => c.id !== id);
-  if (cribSel === id) cribSel = null;
-  saveNotes();
-}
 
 const LINK_COLORS = [
   ['#1A3A3A', '#4FB3C4', '#B8E8F0'],
@@ -761,7 +826,7 @@ function familyIsos(restrict) {
 const trioIsos = () => familyIsos(TRIO_MSGS);
 
 const filterState = {
-  scope: 'all', family: 'all', len: 4, links: 2, sort: 'links',
+  scope: 'all', family: 'all', len: 4, links: 2, sort: 'score',
   mmMin: 1, mmMax: 10,
   trimEdges: false,
   minCount: 1, posMin: 1, offsets: new Set([-1, 1]), msg: 'all',
@@ -794,7 +859,7 @@ function passesFamScope(a, b) {
   return true;
 }
 
-/** Single-message family/msg gate (gaps, notes, freq). */
+/** Single-message family/msg gate (gaps, freq). */
 function passesMsgFilters(msg) {
   if (filterState.family !== 'all' && MSG_FAM[msg] !== filterState.family) return false;
   if (filterState.msg !== 'all' && msg !== filterState.msg) return false;
@@ -839,6 +904,7 @@ function isoRows() {
     sort === 'len' ? (a, b) => b.len - a.len || (b.links || 0) - (a.links || 0)
       : sort === 'pos' ? (a, b) => NAMES.indexOf(a.a) - NAMES.indexOf(b.a) || a.i - b.i
       : sort === 'mm' ? (a, b) => (a.mm || 0) - (b.mm || 0) || b.len - a.len
+      : sort === 'score' ? (a, b) => (b.score || 0) - (a.score || 0) || (b.links || 0) - (a.links || 0) || b.len - a.len
         : (a, b) => (b.links || b.len) - (a.links || a.len) || b.len - a.len
   );
   // refrain: keep the three tandem regions at the top regardless of sort —
@@ -933,11 +999,6 @@ function famViewRows(restrict) {
   return familyIsos(restrict).filter(x => passesFamScope(x.a, x.b));
 }
 
-function notesRows() {
-  return cribs.filter(c => passesMsgFilters(c.msg))
-    .sort((a, b) => NAMES.indexOf(a.msg) - NAMES.indexOf(b.msg) || a.i - b.i);
-}
-
 /** Gap-size histogram, optionally restricted to a family. */
 function gapCounts(family) {
   const counts = {};
@@ -987,7 +1048,6 @@ function currentRows() {
   if (mode === 'gaps') return gapRows();
   if (mode === 'trio') return famViewRows(TRIO_MSGS);
   if (mode === 'families') return famViewRows(null);
-  if (mode === 'notes') return notesRows();
   if (isIsoMode(mode)) return isoRows();
   return [];
 }
@@ -1246,10 +1306,14 @@ function buildFilters() {
   }
   if (meta.filters.includes('sort')) {
     const s = el('select');
-    const opts = [['links', 'links'], ['len', 'length'], ['pos', 'position']];
+    const opts = [];
+    if (mode === 'perfect' || mode === 'imperfect') opts.push(['score', 'score']);
+    opts.push(['links', 'links'], ['len', 'length'], ['pos', 'position']);
     if (mode === 'imperfect') opts.push(['mm', 'gaps']);
     opts.forEach(([v, t]) => s.append(new Option(t, v)));
-    s.value = filterState.sort;
+    // fall back if sticky sort isn't offered in this mode
+    s.value = opts.some(([v]) => v === filterState.sort) ? filterState.sort : opts[0][0];
+    filterState.sort = s.value;
     s.oninput = () => { filterState.sort = s.value; drawList(); paint(); updateDetail(); };
     add('sort', s);
   }
@@ -1319,82 +1383,6 @@ function drawList() {
 
   $('listdesc').textContent = meta.desc;
   $('listhead').textContent = `${meta.label} — ${rows.length} shown`;
-
-  if (mode === 'notes') {
-    $('listhead').textContent = `Notes · ${cribs.length} crib${cribs.length === 1 ? '' : 's'}`;
-    const box = el('div', 'notesbox');
-
-    const form = el('div', 'cribform');
-    form.append(el('div', 'cribhint',
-      'Type a letter and click cells to paint (stays sticky). Type a word to paint it letter-by-letter. Clear wipes all cribs.'));
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.id = 'cribDraftInput';
-    inp.placeholder = 'letter or word…';
-    inp.value = cribDraft;
-    inp.autocomplete = 'off';
-    const syncArm = () => {
-      const left = cribDraft.replace(/\s+/g, '');
-      const h = $('cribArmHint');
-      if (!h) return;
-      if (!left) { h.textContent = 'Empty — click a cell to highlight it.'; return; }
-      h.textContent = left.length === 1
-        ? `Painting “${left[0]}” — click as many cells as you want.`
-        : `Next: “${left[0]}” · ${left.length} left — click a cell.`;
-    };
-    inp.oninput = () => {
-      cribDraft = inp.value;
-      cribPlaceArmed = !!cribDraft.trim();
-      syncArm();
-    };
-    form.append(inp);
-    const arm = el('div', 'cribhint');
-    arm.id = 'cribArmHint';
-    form.append(arm);
-    syncArm();
-    box.append(form);
-
-    const ta = document.createElement('textarea');
-    ta.placeholder = 'Freeform notes…';
-    ta.value = notesText;
-    ta.oninput = () => { notesText = ta.value; saveNotes(); };
-    box.append(ta);
-
-    const list = el('div', 'criblist');
-    const shown = notesRows();
-    if (!cribs.length) {
-      list.append(el('div', 'empty', 'No cribs yet.'));
-    } else if (!shown.length) {
-      list.append(el('div', 'empty', 'No cribs in this family/message filter.'));
-    } else {
-      shown.forEach(c => {
-          const row = el('div', 'cribrow' + (cribSel === c.id ? ' sel' : ''));
-          const left = el('div');
-          left.append(el('div', '', `${shortName(c.msg)}[${c.i}]  ${c.text}`));
-          left.append(el('div', 'meta', `len ${c.text.length}`));
-          const del = el('button', '', '×');
-          del.title = 'Delete crib';
-          del.onclick = e => {
-            e.stopPropagation();
-            deleteCrib(c.id);
-            drawList();
-            paint();
-            updateDetail();
-          };
-          row.append(left, del);
-          row.onclick = () => {
-            cribSel = cribSel === c.id ? null : c.id;
-            drawList();
-            paint();
-            scrollToSel({ a: c.msg, i: c.i });
-          };
-          list.append(row);
-        });
-    }
-    box.append(list);
-    L.append(box);
-    return;
-  }
 
   if (mode === 'gaps') {
     // all pairs are already painted on the grid; list is for jump-to / focus
@@ -1474,7 +1462,11 @@ function drawList() {
       // isomorph family
       dotClass = x.kind || mode;
       loc = `${shortName(x.a)}[${x.i}] ~ ${shortName(x.b)}[${x.j}]`;
-      const bits = [`${x.len}`];
+      const bits = [];
+      if (x.score != null && (mode === 'perfect' || mode === 'imperfect')) {
+        bits.push(x.score.toFixed(1));
+      }
+      bits.push(`${x.len}`);
       if (x.links != null) bits.push(`${x.links}L`);
       if (x.delta != null) bits.push(`Δ${x.delta}`);
       if (x.mm != null) bits.push(`${x.mm}mm`);
@@ -1604,17 +1596,6 @@ function updateDetail() {
     return;
   }
 
-  if (mode === 'notes') {
-    box.classList.add('show');
-    const shown = notesRows();
-    const n = shown.reduce((s, c) => s + c.text.length, 0);
-    const filt = shown.length !== cribs.length ? ` · showing ${shown.length}/${cribs.length}` : '';
-    box.innerHTML =
-      `<b>Notes / cribs</b> — ${cribs.length} crib${cribs.length === 1 ? '' : 's'}${filt} covering <b>${n}</b> glyphs. ` +
-      'Yellow letters on the grid are plaintext overlays. Click a cell with a draft crib to place; click a listed crib to focus.';
-    return;
-  }
-
   if (mode === 'trio') {
     box.classList.remove('show');
     box.innerHTML = '';
@@ -1709,6 +1690,9 @@ function updateDetail() {
   const trunc = showLen > 24 ? '…' : '';
   const title = `${ISO_KIND_META[mode]?.label || mode} isomorph`;
   const extras = [];
+  if (sel.score != null && (mode === 'perfect' || mode === 'imperfect')) {
+    extras.push(`score ${sel.score.toFixed(1)} (∼10⁻${sel.score.toFixed(0)})`);
+  }
   if (sel.links != null) extras.push(`${sel.links} repeat-links`);
   if (sel.delta != null) extras.push(`Δ ${sel.delta}`);
   if (sel.mm != null) extras.push(`${sel.mm} mismatches`);
@@ -1723,6 +1707,14 @@ function updateDetail() {
     const gaps = isoMismatchOffsets(sel).filter(o => o >= range.lo && o <= range.hi);
     const gapTxt = gaps.length ? gaps.map(o => `+${o}`).join(', ') : 'none';
     extraLine = `Skeleton gaps at offsets: <span class="mono">${gapTxt}</span> (red dashed)<br>`;
+  }
+  if ((mode === 'perfect' || mode === 'imperfect') && sel.pat) {
+    extraLine +=
+      `Gap pattern <span class="mono">${sel.pat}</span>` +
+      ` · <span class="mono">${sel.nd || 0}</span> repeated symbols` +
+      ` · <span class="mono">${sel.extra || 0}</span> extra eqs` +
+      ` · <span class="mono">${sel.nEff || 0}</span> distinct hits` +
+      ` / <span class="mono">${sel.opp || 0}</span> opportunities<br>`;
   }
 
   const headNote = range.trimmed
@@ -1799,11 +1791,6 @@ function drawGrid() {
   paint();
 }
 
-function applyCribAttr(c, pt) {
-  if (pt) c.dataset.pt = pt;
-  else delete c.dataset.pt;
-}
-
 function paint() {
   document.querySelectorAll('#grid .msg').forEach(b => {
     const msg = b.dataset.msg;
@@ -1861,17 +1848,12 @@ function paint() {
     }
   }
 
-  const ptMap = mode === 'notes' ? cribMap() : null;
-  const selCrib = (mode === 'notes' && cribSel) ? cribs.find(c => c.id === cribSel) : null;
-
   document.querySelectorAll('#grid .c').forEach(c => {
     const v = +c.dataset.v;
     const n = c.dataset.m;
     const i = +c.dataset.i;
-    const pt = ptMap ? ptMap.get(n + '\0' + i) : null;
-    applyCribAttr(c, pt);
 
-    c.className = 'c' + (pt ? ' hasCrib' : '');
+    c.className = 'c';
     c.style.background = '';
     c.style.borderColor = '';
     c.style.color = '';
@@ -1883,13 +1865,6 @@ function paint() {
       if (fam) c.classList.add('ident-' + fam);
     }
     if (pin.has(n + '|' + i)) c.classList.add('pinned');
-
-    if (mode === 'notes') {
-      if (selCrib && n === selCrib.msg && i >= selCrib.i && i < selCrib.i + selCrib.text.length) {
-        c.classList.add('cribAnchor');
-      }
-      return;
-    }
 
     if (mode === 'trio' || mode === 'families') return;
 
@@ -2028,12 +2003,10 @@ function paint() {
 }
 
 $('grid').addEventListener('mouseover', e => {
-  if (mode === 'notes') return; // crib clicks must not fight hover repaint
   const c = e.target.closest('.c');
   if (c) { hov = { m: c.dataset.m, i: +c.dataset.i, v: +c.dataset.v }; paint(); }
 });
 $('grid').addEventListener('mouseout', e => {
-  if (mode === 'notes') return;
   if (e.target.closest('.c')) { hov = null; paint(); }
 });
 
@@ -2042,27 +2015,6 @@ $('grid').addEventListener('click', e => {
   if (!c) return;
   const m = c.dataset.m;
   const i = +c.dataset.i;
-
-  if (mode === 'notes') {
-    const live = $('cribDraftInput');
-    const draft = (live ? live.value : cribDraft).replace(/\s+/g, '');
-    if (draft) {
-      placeCrib(m, i, draft[0]);
-      // multi-letter draft advances; single letter stays so you can stamp many cells
-      if (draft.length > 1) {
-        cribDraft = draft.slice(1);
-        if (live) live.value = cribDraft;
-      }
-      cribPlaceArmed = !!(live ? live.value : cribDraft).replace(/\s+/g, '');
-      pin.add(m + '|' + i);
-      drawList();
-      paint();
-      updateDetail();
-      const again = $('cribDraftInput');
-      if (again) again.focus();
-      return;
-    }
-  }
 
   // toggle this cell in the multi-select set
   const k = m + '|' + i;
@@ -2073,7 +2025,6 @@ $('grid').addEventListener('click', e => {
 $('bClear').onclick = () => {
   pin.clear();
   sel = null;
-  cribSel = null;
   drawList();
   paint();
   updateDetail();
